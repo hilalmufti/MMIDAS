@@ -1,0 +1,21 @@
+pathway_id,pathway_name,n_genes,in_facs,in_ps,in_both,in_npp
+mmu04710,Circadian rhythm ,34,16,4,2,2
+mmu04713,Circadian entrainment ,98,50,19,12,12
+mmu00010,Glycolysis / Gluconeogenesis ,67,31,0,0,0
+mmu00620,Pyruvate metabolism ,44,22,0,0,0
+mmu00190,Oxidative phosphorylation ,135,88,0,0,0
+mmu03008,Ribosome biogenesis in eukaryotes ,121,25,1,1,1
+mmu03010,Ribosome ,177,73,0,0,0
+mmu04310,Wnt signaling pathway ,172,56,17,7,7
+mmu04152,AMPK signaling pathway ,127,42,7,2,2
+mmu04350,TGF-beta signaling pathway ,110,29,8,1,1
+mmu04010,MAPK signaling pathway ,301,99,36,22,22
+mmu04014,Ras signaling pathway ,235,83,26,16,16
+mmu04020,Calcium signaling pathway ,253,76,47,26,26
+mmu04024,cAMP signaling pathway ,224,82,24,14,14
+mmu03018,RNA degradation ,84,31,0,0,0
+mmu04120,Ubiquitin mediated proteolysis ,147,70,0,0,0
+mmu04140,Autophagy - animal ,142,62,3,2,2
+mmu04721,Synaptic vesicle cycle ,77,49,10,7,7
+mmu04130,SNARE interactions in vesicular transport ,33,15,1,1,1
+mmu04514,Cell adhesion molecules ,183,43,14,6,6
