@@ -2,9 +2,9 @@
 [mmu04710]
 # KEGG pathway name
 pathway_name = "Circadian rhythm "
-# Avaiable genes in the mouse Smart-seq ALM and VISp dataset
+# Available genes in the mouse Smart-seq ALM and VISp dataset
 facs_genes = [ "Creb1", "Rorb", "Cry2", "Fbxw11", "Bhlhe40", "Fbxl3", "Csnk1e", "Cul1", "Prkag1", "Clock", "Nr1d2", "Nr1d1", "Rora", "Btrc", "Rbx1", "Csnk1d"]
-# Avaiable genes in the Patch-seq dataset
+# Available genes in the Patch-seq dataset
 ps_genes = [ "Npas2", "Bhlhe40", "Rorb", "Dbp"]
 
 # KEGG pathway ID
@@ -18,169 +18,169 @@ ps_genes = [ "Gria1", "Prkcg", "Gnb4", "Adcy1", "Nos1ap", "Kcnj6", "Grin2a", "Ca
 [mmu00010]
 # KEGG pathway name
 pathway_name = "Glycolysis / Gluconeogenesis "
-# Avaiable genes in the mouse Smart-seq ALM and VISp dataset
+# Available genes in the mouse Smart-seq ALM and VISp dataset
 facs_genes = [ "Tpi1", "Bpgm", "Gpi1", "Minpp1", "Pfkl", "Pfkp", "Gapdh", "Pgam1", "Adh5", "Aldoa", "Pgk1", "Dlat", "Acss2", "Acss1", "Akr1a1", "Eno2", "Aldh9a1", "Aldh2", "Pdhb", "Pfkm", "Dld", "Pkm", "Aldh3a2", "Hk1", "Aldh7a1", "Ldha", "Eno1", "Ldhb", "Pdha1", "Pgm2", "Aldoc"]
-# Avaiable genes in the Patch-seq dataset
+# Available genes in the Patch-seq dataset
 ps_genes = []
 
 # KEGG pathway ID
 [mmu00620]
 # KEGG pathway name
 pathway_name = "Pyruvate metabolism "
-# Avaiable genes in the mouse Smart-seq ALM and VISp dataset
+# Available genes in the mouse Smart-seq ALM and VISp dataset
 facs_genes = [ "Adh5", "Dlat", "Glo1", "Mdh2", "Acss2", "Acss1", "Akr1a1", "Aldh9a1", "Aldh2", "Acat1", "Pdhb", "Dld", "Me3", "Pkm", "Aldh3a2", "Aldh7a1", "Mdh1", "Ldha", "Ldhb", "Pdha1", "Fh1", "Hagh"]
-# Avaiable genes in the Patch-seq dataset
+# Available genes in the Patch-seq dataset
 ps_genes = []
 
 # KEGG pathway ID
 [mmu00190]
 # KEGG pathway name
 pathway_name = "Oxidative phosphorylation "
-# Avaiable genes in the mouse Smart-seq ALM and VISp dataset
+# Available genes in the mouse Smart-seq ALM and VISp dataset
 facs_genes = [ "Ndufs4", "Cox7b", "Cyc1", "Ndufv3", "ND6", "Uqcrq", "Atp6v1g1", "CYTB", "Atp6v1e1", "Atp6v0d1", "Ndufb7", "Atp6v1b2", "Atp6v1g2", "Ndufb10", "Cox4i1", "Atp6ap1", "COX1", "Atp6v0c", "Ndufv1", "Ndufb2", "Sdhc", "Ndufa8", "Atp6v0e2", "ND4", "Cox7a2l", "Sdhb", "Atp6v1a", "ND5", "Ndufv2", "Ndufa3", "Uqcrc2", "Atp6v0e", "Cox6a2", "Ndufs1", "Uqcrh", "Ndufa7", "Uqcrc1", "Ndufs2", "Ndufb6", "Ppa1", "Uqcr11", "Cox6b1", "Ndufb3", "Ndufs3", "Ndufa5", "Ndufa1", "Atp6v1c1", "Ndufs8", "Sdha", "Cox6a1", "Ndufa2", "Uqcrb", "Atp6v1d", "Ndufab1", "Atp6v0a1", "Ndufb5", "Atp6v0b", "Ndufs5", "Ndufc1", "Ndufa12", "Ndufc2", "ND1", "Sdhd", "Cox6c", "Ndufa10", "Ndufa13", "Ndufb9", "Ndufa4", "Uqcr10", "Uqcrfs1", "Atp6v1f", "Cox5b", "Ndufa11", "Ndufs7", "Ndufs6", "Ndufa6", "Cox7a2", "Cox5a", "Cox7c", "Cycs", "Ndufb8", "ND2", "Atp6v1h", "Ndufb11", "Ppa2", "Cox8a", "Cox17", "Ndufa9"]
-# Avaiable genes in the Patch-seq dataset
+# Available genes in the Patch-seq dataset
 ps_genes = []
 
 # KEGG pathway ID
 [mmu03008]
 # KEGG pathway name
 pathway_name = "Ribosome biogenesis in eukaryotes "
-# Avaiable genes in the mouse Smart-seq ALM and VISp dataset
+# Available genes in the mouse Smart-seq ALM and VISp dataset
 facs_genes = [ "Gnl2", "Mdn1", "Eif6", "Rbm28", "Ran", "Xpo1", "Nop10", "Pop5", "Gtpbp4", "Nxf1", "Nvl", "Xrn1", "Imp3", "Xrn2", "Gnl3l", "Rpp25", "Gnl3", "Nop56", "Rexo2", "Nxt2", "Csnk2b", "Sbds", "Nmd3", "Nop58", "Rpp30"]
-# Avaiable genes in the Patch-seq dataset
+# Available genes in the Patch-seq dataset
 ps_genes = [ "Rpp25"]
 
 # KEGG pathway ID
 [mmu03010]
 # KEGG pathway name
 pathway_name = "Ribosome "
-# Avaiable genes in the mouse Smart-seq ALM and VISp dataset
+# Available genes in the mouse Smart-seq ALM and VISp dataset
 facs_genes = [ "Rps3", "Mrpl17", "Rps5", "Rplp1", "Mrpl9", "Rpl9", "Rps9", "Mrpl36", "Rpl26", "Rpl13a", "Mrpl20", "Rpl18a", "Mrpl35", "Rps18", "Mrpl11", "Rpl13", "Mrpl10", "Rpl41", "Rps23", "Mrpl13", "Rpl4", "Mrpl30", "Rpl32", "Rpl22l1", "Mrpl15", "Rpl14", "Rps13", "Mrps14", "Mrps18a", "Rps27l", "Rpl10", "Rpl19", "Rpl8", "Rpl18", "Rpl21", "Rpl23", "Mrps17", "Mrpl4", "Rps15a", "Rpl38", "Rps25", "Rps4x", "Rps21", "Rpl37a", "Rps27a", "Rps24", "Rpl37", "Rpl3", "Mrpl28", "Rps14", "Mrpl3", "Mrpl27", "Rpl15", "Rpl7", "Rps19", "Mrps12", "Rps2", "Rps27", "Fau", "Rps3a1", "Rps29", "Mrps18c", "Rplp0", "Mrpl18", "Rps8", "Mrps7", "Rps15", "Rplp2", "Mrpl33", "Mrps6", "Mrpl32", "Rpl34", "Rps11"]
-# Avaiable genes in the Patch-seq dataset
+# Available genes in the Patch-seq dataset
 ps_genes = []
 
 # KEGG pathway ID
 [mmu04310]
 # KEGG pathway name
 pathway_name = "Wnt signaling pathway "
-# Avaiable genes in the mouse Smart-seq ALM and VISp dataset
+# Available genes in the mouse Smart-seq ALM and VISp dataset
 facs_genes = [ "Ccnd3", "Prkcg", "Ppp3cb", "Camk2g", "Mapk8", "Wnt5a", "Ppp3r1", "Crebbp", "Tle1", "Prkca", "Camk2a", "Camk2b", "Plcb4", "Csnk1a1", "Jun", "Daam1", "Rock2", "Fbxw11", "Ppp3ca", "Sox17", "Ccnd2", "Nkd1", "Rhoa", "Plcb1", "Serpinf1", "Mapk9", "Rbx1", "Cacybp", "Prickle2", "Daam2", "Rspo1", "Ctbp1", "Prickle1", "Dvl1", "Ctnnb1", "Tle2", "Nlk", "Btrc", "Prkcb", "Psen1", "Camk2d", "Porcn", "Ctnnd2", "Fzd3", "Prkacb", "Cxxc4", "Csnk1e", "Csnk2b", "Senp2", "Rac1", "Apc", "Mapk10", "Tbl1x", "Cul1", "Tle4", "Gsk3b"]
-# Avaiable genes in the Patch-seq dataset
+# Available genes in the Patch-seq dataset
 ps_genes = [ "Camk2d", "Prkcg", "Rspo2", "Wif1", "Wnt10a", "Rspo1", "Cxxc4", "Wnt5a", "Sfrp1", "Rspo3", "Tle1", "Wnt7a", "Sfrp2", "Smad3", "Tle4", "Wnt2", "Wnt5b"]
 
 # KEGG pathway ID
 [mmu04152]
 # KEGG pathway name
 pathway_name = "AMPK signaling pathway "
-# Avaiable genes in the mouse Smart-seq ALM and VISp dataset
+# Available genes in the mouse Smart-seq ALM and VISp dataset
 facs_genes = [ "Cab39", "Ppp2cb", "Rab2a", "Pfkl", "Pfkp", "Insr", "Ppargc1a", "Camkk2", "Eef2", "Ppp2r2b", "Ppp2r2a", "Fasn", "Ppp2r5d", "Akt2", "Foxo1", "Pik3r1", "Pdpk1", "Creb3", "Prkag1", "Ppp2r5c", "Ppp2r2c", "Rab10", "Cpt1a", "Akt1", "Elavl1", "Rab14", "Creb1", "Hmgcr", "Rab11b", "Pfkm", "Pik3ca", "Rps6kb2", "Cpt1c", "Ppp2r2d", "Igf1", "Rheb", "Scd2", "Rps6kb1", "Ppp2ca", "Ppp2r1a", "Adipor1", "Rab8a",]
-# Avaiable genes in the Patch-seq dataset
+# Available genes in the Patch-seq dataset
 ps_genes = [ "Foxo1", "Adra1a", "Pfkfb3", "Cidea", "Creb3l2", "Ppp2r5a", "Igf1"]
 
 # KEGG pathway ID
 [mmu04350]
 # KEGG pathway name
 pathway_name = "TGF-beta signaling pathway "
-# Avaiable genes in the mouse Smart-seq ALM and VISp dataset
+# Available genes in the mouse Smart-seq ALM and VISp dataset
 facs_genes = [ "Rgmb", "Zfyve16", "Crebbp", "Ppp2cb", "Emp3", "Rhoa", "Mapk1", "Mapk3", "Rbx1", "Dcn", "Trf", "Id1", "Id4", "Hdac2", "Id2", "Ncor1", "Rps6kb2", "Id3", "Bmpr1a", "Tfrc", "Smad2", "Rock1", "Rps6kb1", "Ppp2r1a", "Ppp2ca", "Nbl1", "Tgfbr1", "Cul1", "Bmpr2"]
-# Avaiable genes in the Patch-seq dataset
+# Available genes in the Patch-seq dataset
 ps_genes = [ "Rgma", "Tgfb3", "Nog", "Smad3", "Id2", "Skil", "Chrd", "Fst"]
 
 # KEGG pathway ID
 [mmu04010]
 # KEGG pathway name
 pathway_name = "MAPK signaling pathway "
-# Avaiable genes in the mouse Smart-seq ALM and VISp dataset
+# Available genes in the mouse Smart-seq ALM and VISp dataset
 facs_genes = [ "Ppm1a", "Mapk8", "Rap1b", "Map2k2", "Jund", "Ddit3", "Cacnb4", "Chuk", "Flna", "Il1rap", "Stmn1", "Igf1", "Dusp1", "Cacng5", "Bdnf", "Rasgrp1", "Rasgrf1", "Rasgrf2", "Mapk14", "Flt1", "Kdr", "Ptpn5", "Pdgfrb", "Fgf9", "Ppp3cb", "Rap1a", "Ppp3r1", "Prkca", "Fgf1", "Kras", "Sos1", "Jun", "Hspa8", "Akt2", "Ppp3ca", "Mef2c", "Pak1", "Mapk3", "Ikbkb", "Atf4", "Kit", "Gadd45g", "Mapk8ip3", "Vegfa", "Nlk", "Map2k4", "Gadd45a", "Mapt", "Egfr", "Tgfbr1", "Igf2", "Araf", "Cacna1e", "Prkcg", "Ppp5c", "Insr", "Mras", "Ecsit", "Fgfr3", "Mapk9", "Cacng3", "Map2k1", "Cacna2d3", "Nr4a1", "Dusp6", "Irak1", "Mapk11", "Gadd45b", "Braf", "Cdc42", "Taok1", "Erbb4", "Rasa1", "Fos", "Lamtor3", "Arrb1", "Kitl", "Rasa2", "Atf2", "Csf1r", "Tek", "Mapk1", "Dusp3", "Akt1", "Rasgrp3", "Hras", "Prkcb", "Raf1", "Crk", "Fgfr2", "Hspb1", "Rac1", "Prkacb", "Cacna2d1", "Map4k3", "Rras", "Mapk10", "Ntrk2", "Gng12"]
-# Avaiable genes in the Patch-seq dataset
+# Available genes in the Patch-seq dataset
 ps_genes = [ "Cacna1e", "Prkcg", "Erbb4", "Nrtn", "Fgf9", "Fgf1", "Tgfb3", "Fgf10", "Dusp5", "Map3k5", "Efna1", "Cacna1g", "Kit", "Cacng3", "Cacna1h", "Ngf", "Il1rap", "Cacna2d3", "Nr4a1", "Igf1", "Cacng5", "Bdnf", "Dusp7", "Rasgrp1", "Gadd45a", "Rasgrf1", "Mapk11", "Gadd45b", "Rasgrf2", "Cacna2d1", "Flt3", "Egfr", "Dusp10", "Efna5", "Gng12", "Angpt1"]
 
 # KEGG pathway ID
 [mmu04014]
 # KEGG pathway name
 pathway_name = "Ras signaling pathway "
-# Avaiable genes in the mouse Smart-seq ALM and VISp dataset
+# Available genes in the mouse Smart-seq ALM and VISp dataset
 facs_genes = [ "Pak3", "Mapk8", "Rap1b", "Gnb5", "Rapgef5", "Map2k2", "Chuk", "Igf1", "Bdnf", "Rasgrp1", "Rasgrf1", "Rasgrf2", "Flt1", "Kdr", "Gng4", "Pdgfrb", "Fgf9", "Grin1", "Gnb4", "Rap1a", "Fgf1", "Prkca", "Kras", "Calm3", "Sos1", "Gng11", "Akt2", "Pik3r1", "Pak1", "Mapk3", "Ikbkb", "Gng2", "Ralgds", "Kit", "Pik3ca", "Vegfa", "Rasal2", "Egfr", "Igf2", "Prkcg", "Calm2", "Grin2b", "Insr", "Mras", "Bcl2l1", "Rgl1", "Tiam1", "Fgfr3", "Calm1", "Rhoa", "Mapk9", "Gnb1", "Map2k1", "Gng10", "Rab5a", "Cdc42", "Rasa1", "Rala", "Tbk1", "Kitl", "Rasa2", "Ralbp1", "Csf1r", "Shoc2", "Gnb2", "Gng5", "Tek", "Gng3", "Mapk1", "Akt1", "Rasgrp3", "Hras", "Gng7", "Prkcb", "Raf1", "Fgfr2", "Prkacb", "Rac1", "Rras", "Ralgapa1", "Mapk10", "Ntrk2", "Gng12"]
-# Avaiable genes in the Patch-seq dataset
+# Available genes in the Patch-seq dataset
 ps_genes = [ "Prkcg", "Fgf9", "Gnb4", "Fgf1", "Angpt1", "Grin2a", "Rapgef5", "Fgf10", "Rasal1", "Efna1", "Gng2", "Kit", "Ngf", "Gng13", "Igf1", "Gng7", "Bdnf", "Rasgrp1", "Rasgrf1", "Rasgrf2", "Flt3", "Rin1", "Egfr", "Efna5", "Gng12", "Gng4",]
 
 # KEGG pathway ID
 [mmu04020]
 # KEGG pathway name
 pathway_name = "Calcium signaling pathway "
-# Avaiable genes in the mouse Smart-seq ALM and VISp dataset
+# Available genes in the mouse Smart-seq ALM and VISp dataset
 facs_genes = [ "Gnas", "Cacna1e", "Prkcg", "Erbb4", "Grin1", "Atp2b2", "Fgf9", "Pdgfrb", "Ppp3cb", "Chrm2", "Atp2b1", "Ppp3r1", "Adcy1", "Ptk2b", "Fgf1", "Prkca", "Calm2", "Grin2b", "Camk2a", "Calm3", "Camk2b", "Tnnc1", "Grm5", "Asph", "Vdac3", "Plcb4", "Itpka", "Camk1", "Grm1", "Ppp3ca", "Fgfr3", "1810037I17Rik", "Ntrk3", "Calm1", "Ryr2", "Plcb1", "Phka1", "Atp2b4", "Pde1a", "Ednrb", "Atp2a2", "Adora2b", "Slc25a5", "Adra1b", "Itpr1", "Htr2c", "Grin3a", "Camk1g", "Pln", "Nos1", "Mylk", "Grin2c", "Phkg1", "Oxtr", "Gnal", "Vegfa", "Adcy2", "Vdac2", "Vdac1", "Prkcb", "Camk2d", "Slc25a4", "Slc8a1", "Fgfr2", "Itpr2", "Gnaq", "Prkacb", "Flt1", "Plcd4", "Ntrk2", "Egfr", "Camk4", "Mcoln1", "Camk2g", "Gna11", "Kdr"]
-# Avaiable genes in the Patch-seq dataset
+# Available genes in the Patch-seq dataset
 ps_genes = [ "Cacna1e", "Prkcg", "Erbb4", "Fgf9", "Chrm2", "Adcy1", "Ptk2b", "Fgf1", "Adra1d", "Adra1a", "Chrna7", "Grin2a", "Htr2a", "Adrb1", "Itpka", "Grm1", "Camk1", "Drd1", "Fgf10", "Ntrk3", "Pde1a", "Atp2b4", "Adra1b", "Itpr1", "Ryr3", "Cacna1g", "Ptger3", "Hrh1", "Pde1b", "Grin3a", "Camk1g", "Cacna1h", "Ngf", "Nos1", "Oxtr", "Gnal", "Adcy2", "Camk2d", "Slc8a1", "P2rx2", "Slc8a2", "Pde1c", "Orai2", "Sln", "Egfr", "Camk4", "Chrm3"]
 
 # KEGG pathway ID
 [mmu04024]
 # KEGG pathway name
 pathway_name = "cAMP signaling pathway "
-# Avaiable genes in the mouse Smart-seq ALM and VISp dataset
+# Available genes in the mouse Smart-seq ALM and VISp dataset
 facs_genes = [ "Gria1", "Atp2b2", "Mapk8", "Rap1b", "Camk2b", "Atp1a1", "Map2k2", "Atp1b2", "Grin3a", "Grin2c", "Bdnf", "Pde10a", "Sox9", "Grin1", "Rap1a", "Calm3", "Jun", "Rock2", "Pde4b", "Akt2", "Pik3r1", "Pak1", "Mapk3", "Pik3ca", "Adcy2", "Ppp1cb", "Gnai2", "Adora1", "Gnas", "Chrm2", "Crebbp", "Calm2", "Grin2b", "Atp1b3", "Myl9", "Tiam1", "Calm1", "Gabbr1", "Rhoa", "Ryr2", "Mapk9", "Kcnk2", "Atp2a2", "Gria3", "Gnai1", "Map2k1", "Ppp1r1b", "Camk2d", "Rapgef3", "Braf", "Rock1", "Camk4", "Camk2g", "Gria4", "Atp2b1", "Acox1", "Ppp1ca", "Adcy1", "Camk2a", "Fos", "Atp1b1", "Creb3", "Mapk1", "Atp2b4", "Akt1", "Rapgef4", "Creb1", "Atp1a3", "Fxyd1", "Gria2", "Atp1a2", "Pln", "Ppp1r12a", "Oxtr", "Pde4d", "Raf1", "Nfkbia", "Rac1", "Prkacb", "Rras", "Mapk10", "Gnai3"]
-# Avaiable genes in the Patch-seq dataset
+# Available genes in the Patch-seq dataset
 ps_genes = [ "Abcc4", "Gria1", "Htr1f", "Chrm2", "Adcy1", "Grin2a", "Popdc3", "Vav2", "Adrb1", "Drd1", "Pde4b", "Htr1a", "Atp2b4", "Kcnk2", "Ptger3", "Grin3a", "Creb3l2", "Oxtr", "Adcy2", "Ppp1r1b", "Camk2d", "Bdnf", "Adora1", "Camk4"]
 
 # KEGG pathway ID
 [mmu03018]
 # KEGG pathway name
 pathway_name = "RNA degradation "
-# Avaiable genes in the mouse Smart-seq ALM and VISp dataset
+# Available genes in the mouse Smart-seq ALM and VISp dataset
 facs_genes = [ "Cnot2", "Cnot6l", "Tob1", "Hspd1", "Zcchc7", "Pfkp", "Pfkl", "Lsm6", "Lsm3", "Dhx36", "Exosc10", "Pnpt1", "Lsm8", "Eno2", "Exosc9", "Xrn1", "Cnot10", "Xrn2", "Pfkm", "Btg2", "Exosc7", "Hspa9", "Cnot7", "Lsm1", "Ddx6", "C1d", "Cnot6", "Btg1", "Cnot8", "Eno1", "Cnot4"]
-# Avaiable genes in the Patch-seq dataset
+# Available genes in the Patch-seq dataset
 ps_genes = []
 
 # KEGG pathway ID
 [mmu04120]
 # KEGG pathway name
 pathway_name = "Ubiquitin mediated proteolysis "
-# Avaiable genes in the mouse Smart-seq ALM and VISp dataset
+# Available genes in the mouse Smart-seq ALM and VISp dataset
 facs_genes = [ "Ube2g1", "Herc2", "Vhl", "Ube2w", "Cdc27", "Trim37", "Ube2f", "Birc6", "Uba3", "Anapc5", "Ube2e3", "Xiap", "Cdc16", "Rchy1", "Ube2d1", "Mdm2", "Ubr5", "Cdc23", "Ube2l3", "Rnf7", "Fbxw11", "Fbxw7", "Ube2a", "Sae1", "Pias1", "Cul2", "Ube2k", "Klhl13", "Pias2", "Uba1", "Ubc", "Cul5", "Ube2d3", "Stub1", "Nedd4", "Trim32", "Ube2m", "Ube2r2", "Ube3a", "Anapc1", "Rbx1", "Ube2ql1", "Cul3", "Trip12", "Ddb1", "Ube2n", "Uba2", "Rps27a", "Mgrn1", "Ppil2", "Ube2j1", "Ube2e2", "Ubb", "Ube2q2", "Anapc11", "Btrc", "Huwe1", "Fzr1", "Klhl9", "Anapc4", "Itch", "Herc4", "Anapc2", "Anapc16", "Herc1", "Birc2", "Herc3", "Cul1", "Ube2b", "Cul4a"]
-# Avaiable genes in the Patch-seq dataset
+# Available genes in the Patch-seq dataset
 ps_genes = []
 
 # KEGG pathway ID
 [mmu04140]
 # KEGG pathway name
 pathway_name = "Autophagy - animal "
-# Avaiable genes in the mouse Smart-seq ALM and VISp dataset
+# Available genes in the mouse Smart-seq ALM and VISp dataset
 facs_genes = [ "Bnip3", "Sh3glb1", "Atg5", "Pten", "Deptor", "Mapk8", "Atg16l1", "Tbk1", "Kras", "Ppp2cb", "Rragc", "Mras", "Eif2s1", "Bcl2l1", "Camkk2", "Hif1a", "Gabarap", "Map1lc3a", "Gabarapl1", "Akt2", "Supt20", "Pik3r1", "Pdpk1", "Gabarapl2", "Trp53inp2", "Map2k2", "Mapk1", "Sqstm1", "Rragb", "Mapk9", "Akt1", "Mapk3", "Tank", "Rab8a", "Ctsb", "Becn1", "Itpr1", "Rraga", "Map1lc3b", "Ulk2", "Map2k1", "Pik3ca", "Lamp1", "Atg3", "Hras", "Rps6kb2", "Rab7", "Raf1", "Rheb", "Prkacb", "Rps6kb1", "Vmp1", "Lamp2", "Ppp2ca", "Rras", "Mapk10", "Ctsd", "Ctsl", "Bcl2", "Rb1cc1", "Hmgb1", "Atg12"]
-# Avaiable genes in the Patch-seq dataset
+# Available genes in the Patch-seq dataset
 ps_genes = [ "Deptor", "Dapk2", "Itpr1"]
 
 # KEGG pathway ID
 [mmu04142]
 # KEGG pathway name
 pathway_name = "Lysosome "
-# Avaiable genes in the mouse Smart-seq ALM and VISp dataset
+# Available genes in the mouse Smart-seq ALM and VISp dataset
 facs_genes = [ "Ap1s1", "Npc1", "Ap3m2", "Hexb", "Ctss", "Ap3b1", "Dmxl2", "Ctsf", "Ids", "Aga", "Gnptg", "Fuca2", "Ncoa7", "Ctsc", "Ppt1", "Ap3d1", "Cd63", "Ctsz", "Ctsh", "Laptm5", "Atp6v0d1", "Man2b1", "Fuca1", "Lipa", "Acp2", "Ap1m1", "Atp6v0a1", "Lgmn", "Atp6v0b", "Ap1s2", "Psap", "Npc2", "Laptm4b", "M6pr", "Ctsb", "Tpp1", "Atp6ap1", "Cln5", "Cltc", "Cd68", "Cltb", "Atp6v0c", "Scarb2", "Ap1b1", "Gaa", "Gns", "Dmxl1", "Lamp1", "Ap4s1", "Ap3m1", "Clta", "Hgsnat", "Litaf", "Wdr7", "Atp6v1h", "Asah1", "Laptm4a", "Sort1", "Lamp2", "Hexa", "Ctsd", "Ap3b2", "Ctsl", "Ctsa", "Cd164", "Mcoln1", "Ctso", "Neu1", "Smpd1"]
-# Avaiable genes in the Patch-seq dataset
+# Available genes in the Patch-seq dataset
 ps_genes = []
 
 # KEGG pathway ID
 [mmu04721]
 # KEGG pathway name
 pathway_name = "Synaptic vesicle cycle "
-# Avaiable genes in the mouse Smart-seq ALM and VISp dataset
+# Available genes in the mouse Smart-seq ALM and VISp dataset
 facs_genes = [ "Stx1a", "Atp6v1a", "Atp6v1c1", "Vamp2", "Slc1a1", "Slc1a3", "Slc1a2", "Napa", "Ap2m1", "Dnm2", "Atp6v1f", "Ap2s1", "Atp6v1g1", "Atp6v1e1", "Slc17a6", "Stx3", "Atp6v0d1", "Atp6v1d", "Cplx2", "Ap2a2", "Atp6v0a1", "Nsf", "Rab3a", "Unc13c", "Atp6v0b", "Atp6v1b2", "Dnm3", "Atp6v0e", "Atp6v1g2", "Slc6a1", "Cplx1", "Cplx3", "Stx1b", "Cltc", "Cltb", "Atp6v0c", "Slc17a8", "Clta", "Unc13b", "Ap2a1", "Atp6v1h", "Stxbp1", "Snap25", "Dnm1", "Slc6a13", "Unc13a", "Atp6v0e2", "Syt1", "Slc17a7"]
-# Avaiable genes in the Patch-seq dataset
+# Available genes in the Patch-seq dataset
 ps_genes = [ "Slc6a7", "Slc6a1", "Cplx3", "Cplx2", "Slc32a1", "Slc18a3", "Unc13b", "Unc13c", "Slc17a8", "Slc17a7"]
 
 # KEGG pathway ID
 [mmu04130]
 # KEGG pathway name
 pathway_name = "SNARE interactions in vesicular transport "
-# Avaiable genes in the mouse Smart-seq ALM and VISp dataset
+# Available genes in the mouse Smart-seq ALM and VISp dataset
 facs_genes = [ "Snap23", "Stx1a", "Gosr2", "Vamp3", "Vamp2", "Stx7", "Stx1b", "Stx3", "Stx6", "Vti1b", "Vamp1", "Stx4a", "Bet1", "Vamp4", "Sec22b"]
-# Avaiable genes in the Patch-seq dataset
+# Available genes in the Patch-seq dataset
 ps_genes = [ "Vamp1"]
 
 # KEGG pathway ID
 [mmu04514]
 # KEGG pathway name
 pathway_name = "Cell adhesion molecules "
-# Avaiable genes in the mouse Smart-seq ALM and VISp dataset
+# Available genes in the mouse Smart-seq ALM and VISp dataset
 facs_genes = [ "Ocln", "Nrcam", "Mag", "Ptprs", "Sdc2", "Cntnap2", "Itgb1", "Itgav", "Nlgn2", "Nrxn3", "Cadm1", "Ptprm", "H2-D1", "Negr1", "Ncam1", "Nfasc", "Ncam2", "Alcam", "Vcam1", "Mpzl1", "Jam2", "Cd34", "Cntn1", "H2-T23", "H2-K1", "Itga6", "Cldn11", "Pecam1", "F11r", "Slitrk2", "Nlgn3", "Nlgn1", "Cldn10", "Slitrk4", "Cldn12", "Lrrc4c", "Glg1", "Nrxn1", "Cldn5", "Icam2", "Esam", "Ptprd", "Jam3"]
-# Avaiable genes in the Patch-seq dataset
+# Available genes in the Patch-seq dataset
 ps_genes = [ "Itga4", "Slitrk1", "Igsf11", "Ptprf", "Lrrc4c", "Ptprm", "H2-M3", "Itga8", "Ntng1", "Cdh4", "Itgav", "Ncam2", "Alcam", "Ptprd"]
