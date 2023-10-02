@@ -4,7 +4,7 @@ A generalized and unsupervised mixture variational model with a multi-armed deep
 
 
 # Data
-- [Allen Institute Mouse Smart-seq dataset](https://pubmed.ncbi.nlm.nih.gov/30382198/)
-- [Allen Institute Mouse 10x isocortex dataset](https://pubmed.ncbi.nlm.nih.gov/34004146/)
-- Allen Institute Patch-seq data
+- [Allen Institute Mouse Smart-seq dataset](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE115746)
+- [Allen Institute Mouse 10x isocortex dataset](https://assets.nemoarchive.org/dat-jb2f34y)
+- [Allen Institute Patch-seq data](https://dandiarchive.org/dandiset/000020/)
 - [Seattle Alzheimer’s disease dataset (SEA-AD)](https://SEA-AD.org/)
