@@ -11,7 +11,9 @@ ps_genes = [ "Npas2", "Bhlhe40", "Rorb", "Dbp"]
 [mmu04713]
 # KEGG pathway name
 pathway_name = "Circadian entrainment "
+# Available genes in the mouse Smart-seq ALM and VISp dataset
 facs_genes = [ "Gria1", "Gnas", "Prkcg", "Grin1", "Gnb4", "Adcy1", "Calm2", "Grin2b", "Prkca", "Camk2a", "Gnao1", "Calm3", "Camk2b", "Fos", "Gnb5", "Gng11", "Plcb4", "Gnb2", "Gng5", "Calm1", "Gng3", "Ryr2", "Plcb1", "Mapk1", "Kcnj9", "Gnb1", "Mapk3", "Creb1", "Itpr1", "Gng2", "Gria2", "Gria3", "Nos1", "Gnai1", "Grin2c", "Gng10", "Adcy2", "Gng7", "Prkcb", "Camk2d", "Kcnj3", "Gnai2", "Gnaq", "Prkacb", "Gucy1a2", "Gnai3", "Camk2g", "Gria4", "Gng12", "Gng4"]
+# Available genes in the Patch-seq dataset
 ps_genes = [ "Gria1", "Prkcg", "Gnb4", "Adcy1", "Nos1ap", "Kcnj6", "Grin2a", "Cacna1g", "Ryr3", "Itpr1", "Gng2", "Cacna1h", "Gng13", "Nos1", "Adcy2", "Gng7", "Camk2d", "Gng12", "Gng4"]
 
 # KEGG pathway ID
@@ -19,6 +21,7 @@ ps_genes = [ "Gria1", "Prkcg", "Gnb4", "Adcy1", "Nos1ap", "Kcnj6", "Grin2a", "Ca
 # KEGG pathway name
 pathway_name = "Glycolysis / Gluconeogenesis "
 # Available genes in the mouse Smart-seq ALM and VISp dataset
+facs_genes = [ "Tpi1", "Bpgm", "Gpi1", "Minpp1", "Pfkl", "Pfkp", "Gapdh", "Pgam1", "Adh5", "Aldoa", "Pgk1", "Dlat", "Acss2", "Acss1", "Akr1a1", "Eno2", "Aldh9a1", "Aldh2", "Pdhb", "Pfkm", "Dld", "Pkm", "Aldh3a2", "Hk1", "Aldh7a1", "Ldha", "Eno1", "Ldhb", "Pdha1", "Pgm2", "Aldoc"]
 facs_genes = [ "Tpi1", "Bpgm", "Gpi1", "Minpp1", "Pfkl", "Pfkp", "Gapdh", "Pgam1", "Adh5", "Aldoa", "Pgk1", "Dlat", "Acss2", "Acss1", "Akr1a1", "Eno2", "Aldh9a1", "Aldh2", "Pdhb", "Pfkm", "Dld", "Pkm", "Aldh3a2", "Hk1", "Aldh7a1", "Ldha", "Eno1", "Ldhb", "Pdha1", "Pgm2", "Aldoc"]
 # Available genes in the Patch-seq dataset
 ps_genes = []
