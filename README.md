@@ -7,4 +7,6 @@ A generalized and unsupervised mixture variational model with a multi-armed deep
 - [Allen Institute Mouse Smart-seq dataset](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE115746)
 - [Allen Institute Mouse 10x isocortex dataset](https://assets.nemoarchive.org/dat-jb2f34y)
 - [Allen Institute Patch-seq data](https://dandiarchive.org/dandiset/000020/)
+
+  The electrophysiological features have been computaed according to the approach provided in [cplAE_MET/preproc/data_proc_E.py](cplAE_MET/preproc/data_proc_E.py)
 - [Seattle Alzheimer’s disease dataset (SEA-AD)](https://SEA-AD.org/)
