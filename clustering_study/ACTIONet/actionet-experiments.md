@@ -1,5 +1,6 @@
 
-### Notes
+### Notes to run ACTIONet
+
  - R version failed to compile locally (`Ubuntu 22.04.3 LTS` with `R 4.1.1`), - Python version seems broken with missing core functions. 
  - The `DockerFile` to create an image fails - presumably because it builds it from the current state rather than a stable version of hte github codebase. 
  - Other users report similar problems in the [issues section](https://github.com/shmohammadi86/ACTIONet/issues).
@@ -22,15 +23,13 @@ The script to generate ACTIONet results:
 library(ACTIONet)
 
 base_path <- "/data/"
-for fname in c("mouse_smartseq_counts_20240130", 
-               "mouse_10x_GABAergic_isoCTX_counts_20240129", 
-               "mouse_10x_Glutamatergic_isoCTX_counts_20240129") {
+for fname in c("mouse_smartseq_normalized_20240130", 
+               "mouse_10x_GABAergic_isoCTX_normalized_20240129", 
+               "mouse_10x_Glutamatergic_isoCTX_normalized_20240129") {
     data_file = paste(c(base_path,fname,".h5ad"),collapse="")
     result_file = paste(c(base_path,"ACTIONet_",fname,".h5ad"),collapse="")
     ace <- AnnData2ACE(data_file)
-    names(assays(ace)) <- "counts"
-    ace = normalize.ace(ace) # creats "logcounts" within assays(ace)
-    assays(ace)[["counts"]] <- NULL
+    names(assays(ace)) <- "logcounts"
     ace = reduce.ace(ace) # uses "logcounts" within assays(ace)
     ace = run.ACTIONet(ace, 
                        min_cells_per_arch=10)
@@ -41,7 +40,8 @@ for fname in c("mouse_smartseq_counts_20240130",
 ```
 
  - `reduce` or `run.ACTIONet` requires less memory than `AnnData2ACE`.
- - Our `.h5ad` file contains count data.
- - Clustering results with log1p-cpm data provided as part of the Anndata file and bypassing `normalize.ace` are worse.
+ - `ace = normalize.ace(ace)` # creates a field "logcounts" within assays(ace)
+ - `normalize.ace` does not simply return log1p-cpm transformed data.
+ - Therefore for comparisons, we provided log1p-cpm normalized data and skipped custom normalization. 
  - Matrix $G$ referred to in the paper is part of the `ace` object: `colNets(ace)[[net_slot_out]] <- G` [(source)](https://github.com/shmohammadi86/ACTIONet/blob/R-release/R/main.R).
  - The default value for `net_slot_out` is `'ACTIONet'`.
