@@ -4,8 +4,7 @@ from torch.nn import ModuleList as mdl
 import numpy as np
 from torch.autograd import Variable
 from torch.nn import functional as F
-#from torcheval.metrics import R2Score
-#from torchmetrics.functional import pearson_corrcoef
+
 
 
 class cpl_mixVAE(nn.Module):
@@ -31,7 +30,7 @@ class cpl_mixVAE(nn.Module):
         loss: loss function module
     """
     def __init__(self, input_dim, fc_dim, n_categories, state_dim, lowD_dim, x_drop, s_drop, n_arm, lam, lam_pc,
-                 tau, beta, hard, variational, device, eps, momentum, n_zim, ref_prior):
+                 tau, beta, hard, variational, device, eps, momentum, ref_prior):
         """
         Class instantiation.
 
@@ -45,13 +44,15 @@ class cpl_mixVAE(nn.Module):
             s_drop: dropout probability of the state variable.
             n_arm: int value that indicates number of arms.
             lam: coupling factor in the cpl-mixVAE model.
+            lam_pc: coupling factor for the prior categorical variable.
             tau: temperature of the softmax layers, usually equals to 1/n_categories (0 < tau <= 1).
             beta: regularizer for the KL divergence term.
             hard: a boolean variable, True uses one-hot method that is used in Gumbel-softmax, and False uses the Gumbel-softmax function.
-            state_det: a boolean variable, False uses sampling.
+            variational: a boolean variable for variational mode, False mode does not use sampling.
             device: int value indicates the gpu device. Do not define it if you train the model on cpu).
             eps: a small constant value to fix computation overflow.
             momentum: a hyperparameter for batch normalization that updates its running statistics.
+            ref_prior: a boolean variable, True uses the reference prior for the categorical variable.
         """
         super(cpl_mixVAE, self).__init__()
         self.input_dim = input_dim
@@ -68,7 +69,6 @@ class cpl_mixVAE(nn.Module):
         self.beta = beta
         self.varitional = variational
         self.eps = eps
-        self.n_zim = n_zim
         self.ref_prior = ref_prior
         self.momentum = momentum
 
@@ -368,7 +368,6 @@ class cpl_mixVAE(nn.Module):
                 x_bin = torch.where(x[arm_a] > 0.1, 1., 0.)
                 l_rec[arm_a] += 0.5 * F.binary_cross_entropy(rec_bin, x_bin)
             elif mode == 'ZINB':
-                # l_rec[arm_a] = zinb_distribution_loss(recon_x[arm_a], p_x[arm_a], r_x[arm_a], x[arm_a]).sum(dim=1).mean()
                 l_rec[arm_a] = zinb_loss(recon_x[arm_a], p_x[arm_a], r_x[arm_a], x[arm_a])
 
             if self.varitional:
@@ -423,162 +422,17 @@ class cpl_mixVAE(nn.Module):
 
 
 
-class deepClassifier(nn.Module):
-
-    def __init__(self, input_dim, output_dim, x_drop, n_std, device, eps, momentum, binary):
-        """
-        Class instantiation.
-
-        input args
-            input_dim: input dimension (size of the input layer).
-            output_dim: output dimension (size of the output layer).
-            x_drop: dropout probability at the first (input) layer.
-            device: int value indicates the gpu device. Do not define it if you train the model on cpu).
-            eps: a small constant value to fix computation overflow.
-            momentum: a hyperparameter for batch normalization that updates its running statistics.
-        """
-        super(deepClassifier, self).__init__()
-        self.input_dim = input_dim
-        self.output_dim = output_dim
-        self.x_dp = nn.Dropout(x_drop)
-        self.n_std = n_std
-        self.eps = eps
-        self.binary = binary
-
-        if device is None:
-            self.gpu = False
-        else:
-            self.gpu = True
-            self.device = device
-
-        # self.fcin = nn.Linear(self.input_dim, 10)
-        # self.fc1 = nn.Linear(10, 10)
-        # self.fc2 = nn.Linear(10, 10)
-        # self.fcout = nn.Linear(10, 1)
-        # self.fcin = mdl([nn.Linear(self.input_dim, self.input_dim) for i in range(self.output_dim)])
-        # self.fcc = mdl([nn.Linear(self.input_dim, self.input_dim) for i in range(self.output_dim)])
-        # self.fcout = mdl([nn.Linear(self.input_dim, 1) for i in range(self.output_dim)])
-
-        self.fcin1 = nn.Linear(self.input_dim, self.input_dim)
-        self.fcin2 = nn.Linear(self.input_dim, self.input_dim)
-        self.fc11 = nn.Linear(self.input_dim, self.input_dim)
-        self.fc12 = nn.Linear(self.input_dim, self.input_dim)
-        self.fcout = nn.Linear(10, self.output_dim)
-        self.fcout1 = nn.Linear(self.input_dim, 1)
-        self.fcout2 = nn.Linear(self.input_dim, 1)
-        self.nl1 = nn.BatchNorm1d(num_features=self.input_dim, eps=self.eps, momentum=momentum)
-        self.nl2 = nn.BatchNorm1d(num_features=10, eps=self.eps, momentum=momentum)
-        self.nl3 = nn.BatchNorm1d(num_features=self.output_dim, eps=self.eps, momentum=momentum)
-        self.relu = nn.ReLU()
-        self.sigmoid = nn.Sigmoid()
-        self.ce_loss = nn.BCELoss()
-        self.mse_loss = nn.MSELoss()
-        self.cos = nn.CosineSimilarity(dim=1, eps=1e-6)
-
-    def deepnet(self, x):
-
-        # y = [None] * self.output_dim
-        # for i in range(self.output_dim):
-        #     z = self.fcin[i](x)
-        #     z = self.fcc[i](z)
-        #     y[i] = self.sigmoid(self.fcout[i](z))
-
-        # x = self.sigmoid(self.fc2(x))
-        # y1 = self.sigmoid(self.fcout1(x))
-        # y2 = self.sigmoid(self.fcout2(x))
-        x1 = self.sigmoid(self.fcin1(x))
-        x2 = self.sigmoid(self.fcin2(x))
-        x1 = self.sigmoid(self.fc11(x1))
-        x2 = self.sigmoid(self.fc12(x2))
-        # x = self.sigmoid(self.fc2(x))
-        # y1 = self.sigmoid(self.fcout1(x))
-        # y2 = self.sigmoid(self.fcout2(x))
-        return self.sigmoid(self.fcout1(x1)), self.sigmoid(self.fcout2(x2))
-
-    def forward(self, x, eval=False):
-        if not eval:
-            x = self.reparam_trick(x, self.n_std)
-
-        y1, y2 = self.deepnet(x)
-        y = torch.cat((y1, y2), dim=1)
-        return y
-
-    def reparam_trick(self, mu, std):
-
-        eps = Variable(torch.FloatTensor(mu.size()).normal_())
-        if self.gpu:
-            eps = eps.cuda(self.device)
-        return eps.mul(std).add(mu)
-
-    def loss(self, x_pred, x, weight=None):
-
-        if self.output_dim == 1:
-            x_pred = x_pred.squeeze()
-        if self.binary:
-            return F.binary_cross_entropy(x_pred, x, reduction='mean')
-        else:
-            loss = 0.
-            for d in range(x.size(1)):
-                pred = x_pred[:, d]
-                true = x[:, d]
-                for u_x in true.unique():
-                    loss += F.mse_loss(pred[true == u_x].median(), true[true == u_x].median())
-
-            return loss
-
-        # self.mse_loss(x, x_pred) + self.mse_loss(x, x_pred) / min_var_x
-        # 1. - self.cos(x, x_pred).abs().mean()
-        # for u_x in x.unique(dim=0):
-        #     try:
-        #         # loss.append(F.mse_loss(x_pred[x==u_x].median(), x[u_x==x].median(), reduction='mean'))
-        #         loss.append(F.mse_loss(x_pred[x == u_x].median(), x[u_x == x].median(), reduction='mean'))
-        #     except:
-        #         loss.append(F.mse_loss(x_pred, x))
-        # return sum(loss)/len(loss)
-
-
-def zinb_distribution_loss(y, pi, theta, X, eps=1e-6):
-
-    X_dim = X.size(-1)
-    mu = X.exp() - 1.  # logp(count) -->  (count)
-
-    # # extracting r,p, and z from the concatenated vactor.
-    # # eps added for stability.
-    # theta = zinb_params[:, :X_dim] + eps
-    # pi = (1 - eps) * (zinb_params[:, X_dim:2 * X_dim] + eps)
-    # x = (1 - eps) * (zinb_params[:, 2 * X_dim:] + eps)
-    x = y
-
-    softplus_pi = F.softplus(-pi)  #  uses log(sigmoid(x)) = -softplus(-x)
-    log_theta_eps = torch.log(theta + eps)
-    log_theta_mu_eps = torch.log(theta + mu + eps)
-    pi_theta_log = -pi + theta * (log_theta_eps - log_theta_mu_eps)
-
-    case_zero = F.softplus(pi_theta_log) - softplus_pi
-    mul_case_zero = torch.mul((x < eps).type(torch.float32), case_zero)
-
-    case_non_zero = (
-            -softplus_pi
-            + pi_theta_log
-            + x * (torch.log(mu + eps) - log_theta_mu_eps)
-            + torch.lgamma(x + theta)
-            - torch.lgamma(theta)
-            - torch.lgamma(x + 1))
-
-    mul_case_non_zero = torch.mul((x > eps).type(torch.float32), case_non_zero)
-    result = -(mul_case_zero + mul_case_non_zero)
-    # assert result.sum(dim=-1).min() > -eps
-    return result
-
-
 def zinb_loss(rec_x, x_p, x_r, X, eps=1e-6):
     """
     loss function using zero inflated negative binomial distribution for
     log(x|s,z) for genes expression data.
 
    input args
-        zinb_params: paramters of distribution i.e., r, p, and z.
-        X: a small constant value to fix computation overflow.
+        rec_x: log of mean value of the negative binomial distribution.
+        x_p: log of the probability of dropout events.
+        x_r: log of the probability of zero inflation.
+        X: input data.
+        eps: a small constant value to fix computation overflow.
 
     return
         l_zinb: log of loss value
