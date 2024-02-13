@@ -49,7 +49,7 @@ Select the appropriate PyTorch installation from [here](https://pytorch.org/get-
 conda install pytorch==2.1.1 torchvision==0.16.1 torchaudio==2.1.1 pytorch-cuda=12.1 -c pytorch -c nvidia
 ```
 
-#### Install ```scvae``` package
+#### Install ```mmidas``` package
 ```
 pip install -e .    
 ```
