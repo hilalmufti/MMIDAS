@@ -6,8 +6,7 @@ from torch.autograd import Variable
 from torch.nn import functional as F
 
 
-
-class cpl_mixVAE(nn.Module):
+class mixVAE_model(nn.Module):
     """
     Class for the neural network module for mixture of continuous and
     discrete random variables. The module contains an VAE using
@@ -54,7 +53,7 @@ class cpl_mixVAE(nn.Module):
             momentum: a hyperparameter for batch normalization that updates its running statistics.
             ref_prior: a boolean variable, True uses the reference prior for the categorical variable.
         """
-        super(cpl_mixVAE, self).__init__()
+        super(mixVAE_model, self).__init__()
         self.input_dim = input_dim
         self.fc_dim = fc_dim
         self.state_dim = state_dim

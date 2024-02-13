@@ -1,24 +1,18 @@
-import torch
 import pickle
-import torch.nn as nn
 import numpy as np
-from torch.autograd import Variable
-from torch.nn import functional as F
 from sklearn.metrics.cluster import adjusted_rand_score
+import time
+import torch
+from torch.autograd import Variable
 import torch.nn.utils.prune as prune
-import time, glob
-from sklearn.utils import shuffle
 from torch.utils.data import DataLoader, TensorDataset
-from scipy.optimize import linear_sum_assignment
-from operator import itemgetter
 import matplotlib.pyplot as plt
-from matplotlib import gridspec, cm
 from sklearn.model_selection import train_test_split
-from utils.augmentation.udagan import *
-from utils.nn_model import cpl_mixVAE
+from .augmentation.udagan import *
+from .nn_model import mixVAE_model
 
 
-class train_cplmixVAE:
+class cplmixVAE:
 
     def __init__(self, saving_folder='', aug_file='', n_feature=0, device=None, eps=1e-8, save_flag=True):
 
@@ -76,8 +70,6 @@ class train_cplmixVAE:
                 indx = np.where(label == ll)[0]
                 tt_size = int(train_size * sum(label == ll))
                 _, _, train_subind, test_subind = self.data_gen(dataset[indx, :], tt_size)
-                # train_len = len(train_subind) // 10
-                # test_len = len(test_subind) // 10
                 train_ind.append(indx[train_subind])
                 test_ind.append(indx[test_subind])
 
@@ -113,23 +105,30 @@ class train_cplmixVAE:
 
     def init_model(self, n_categories, state_dim, input_dim, fc_dim=100, lowD_dim=5, x_drop=0.2, s_drop=0.2, lr=.001,
                    lam=1, lam_pc=1, n_arm=2, temp=1., tau=0.01, beta=1., hard=False, variational=True, ref_prior=False,
-                   trained_model='', n_pr=0, momentum=.01, n_zim=1):
+                   trained_model='', n_pr=0, momentum=.01):
         """
         Initialized the deep mixture model and its optimizer.
 
         input args:
+            n_categories: number of categories of the latent variables.
+            state_dim: dimension of the state variable.
+            input_dim: input dimension (size of the input layer).
             fc_dim: dimension of the hidden layer.
             lowD_dim: dimension of the latent representation.
             x_drop: dropout probability at the first (input) layer.
             s_drop: dropout probability of the state variable.
             lr: the learning rate of the optimizer, here Adam.
-            n_arm: int value that indicates number of arms.
             lam: coupling factor in the cpl-mixVAE model.
+            lam_pc: coupling factor for the prior categorical variable.
+            n_arm: int value that indicates number of arms.
+            temp: temperature of sampling
             tau: temperature of the softmax layers, usually equals to 1/n_categories (0 < tau <= 1).
             beta: regularizer for the KL divergence term.
             hard: a boolean variable, True uses one-hot method that is used in Gumbel-softmax, and False uses the Gumbel-softmax function.
-            state_det: a boolean variable, False uses sampling.
-            trained_model: the path of a pre-trained model, in case you wish to initialized the network with a pre-trained network.
+            variational: a boolean variable for variational mode, False mode does not use sampling.
+            ref_prior: a boolean variable, True uses the reference prior for the categorical variable.
+            trained_model: a pre-trained model, in case you want to initialized the network with a pre-trained network.
+            n_pr: number of prunned categories, only if you want to initialize the network with a pre-trained network.
             momentum: a hyperparameter for batch normalization that updates its running statistics.
         """
         self.lowD_dim = lowD_dim
@@ -140,11 +139,10 @@ class train_cplmixVAE:
         self.n_arm = n_arm
         self.fc_dim = fc_dim
         self.ref_prior = ref_prior
-        self.n_zim = n_zim
-        self.model = cpl_mixVAE(input_dim=self.input_dim, fc_dim=fc_dim, n_categories=self.n_categories, state_dim=self.state_dim,
+        self.model = mixVAE_model(input_dim=self.input_dim, fc_dim=fc_dim, n_categories=self.n_categories, state_dim=self.state_dim,
                                 lowD_dim=lowD_dim, x_drop=x_drop, s_drop=s_drop, n_arm=self.n_arm, lam=lam, lam_pc=lam_pc,
                                 tau=tau, beta=beta, hard=hard, variational=variational, device=self.device, eps=self.eps,
-                                ref_prior=ref_prior, momentum=momentum, n_zim=self.n_zim)
+                                ref_prior=ref_prior, momentum=momentum)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=lr)
 
         if self.gpu:
@@ -170,23 +168,24 @@ class train_cplmixVAE:
         self.current_time = time.strftime('%Y-%m-%d-%H-%M-%S')
 
 
-    def run(self, train_loader, test_loader, alldata_loader, n_epoch, n_epoch_p, c_p=0, min_con=.5, max_pron_it=0, mode='MSE'):
+    def run(self, train_loader, test_loader, alldata_loader, n_epoch, n_epoch_p, c_p=0, min_con=.5, max_prun_it=0, mode='MSE'):
         """
         run the training of the cpl-mixVAE with the pre-defined parameters/settings
         pcikle used for saving the file
 
         input args
-            data_df: a data frame including 'cluster_id', 'cluster', and 'class_label'
-            train_loader: train dataloader
-            test_loader: test dataloader
-            validation_set:
-            n_epoch: number of training epoch, without pruning
-            n_epoch: number of training epoch, with pruning
-            min_con: minimum value of consensus among pair of arms
-            temp: temperature of sampling
+            train_loader: train dataloader.
+            test_loader: test dataloader.
+            all_loader: all dataloader.
+            n_epoch: number of training epoch, without pruning.
+            n_epoch_p: number of training epoch, with pruning.
+            c_p: the prior categorical variable, only if ref_prior is True.
+            min_con: minimum value of consensus among pair of arms.
+            max_prun_it: maximum number of pruning iterations.
+            mode: the loss function, either 'MSE' or 'ZINB'.
 
         return
-            data_file_id: the path of the output dictionary.
+            data_file_id: the output dictionary.
         """
         # define current_time
         self.current_time = time.strftime('%Y-%m-%d-%H-%M-%S')
@@ -714,6 +713,20 @@ class train_cplmixVAE:
 
 
     def eval_model(self, data_mat, c_p=[], c_onehot=[], batch_size=1000, mode='MSE'):
+        """
+        run the training of the cpl-mixVAE with the pre-defined parameters/settings
+        pcikle used for saving the file
+
+        input args
+            data_mat: the input data matrix for evaluation.
+            c_p: the prior categorical variable, only if ref_prior is True.
+            c_onehot: the one-hot encoded prior categorical variable, only if ref_prior is True.
+            batch_size: the batch size for the evaluation.
+            mode: the loss function, either 'MSE' or 'ZINB'.
+
+        return
+            d_dict: the output dictionary.
+        """
 
         data_set_troch = torch.FloatTensor(data_mat)
         indx_set_troch = torch.FloatTensor(np.arange(data_mat.shape[0]))
@@ -810,9 +823,7 @@ class train_cplmixVAE:
         for arm in range(self.n_arm):
             mean_total_loss_rec[arm] = np.mean(np.array(total_loss_rec[arm]))
             mean_total_loglikelihood[arm] = np.mean(np.array(total_loglikelihood[arm]))
-        # save data
-
-        data_file_id = self.folder + '/model/model_eval' #_pruning_' + str(len(prune_indx))
+ 
 
         d_dict = dict()
         d_dict['state_sample'] = state_sample
@@ -834,124 +845,7 @@ class train_cplmixVAE:
         d_dict['recon_c'] = recon_cell
         d_dict['prune_indx'] = prune_indx
 
-        # self.save_file(data_file_id,
-        #                state_sample=state_sample,
-        #                state_mu=state_mu,
-        #                state_var=state_var,
-        #                state_cat=state_cat,
-        #                prob_cat=prob_cat,
-        #                total_loss_rec=mean_total_loss_rec,
-        #                total_likelihood=mean_total_loglikelihood,
-        #                total_dist_z=np.mean(np.array(total_dist_z)),
-        #                total_dist_qz=np.mean(np.array(total_dist_qz)),
-        #                mean_test_rec=mean_test_rec,
-        #                predicted_label=predicted_label,
-        #                data_indx=data_indx,
-        #                z_prob=z_prob,
-        #                z_sample=z_sample,
-        #                x_low=data_low,
-        #                p_c=p_cell,
-        #                recon_c=recon_cell,
-        #                prune_indx=prune_indx)
-
-        return d_dict, data_file_id
-
-
-    def cluster_analysis(self, data_mat, ref_label, batch_size=1000):
-
-        data_set_troch = torch.FloatTensor(data_mat)
-        label_set_troch = torch.FloatTensor(ref_label)
-        all_data = TensorDataset(data_set_troch, label_set_troch)
-        n_class = len(np.unique(ref_label))
-
-        data_loader = DataLoader(all_data, batch_size=batch_size, shuffle=False, drop_last=False, pin_memory=True)
-
-        self.model.eval()
-        bias = self.model.fcc[0].bias.detach().cpu().numpy()
-        pruning_mask = np.where(bias != 0.)[0]
-        max_len = len(data_loader.dataset)
-        predicted_label = np.zeros((self.n_arm, max_len))
-        class_label = np.zeros(max_len)
-        category_vs_class = np.zeros((self.n_arm, n_class, self.n_categories))
-        z_prob = np.zeros((self.n_arm, max_len, self.n_categories))
-        z_sample = np.zeros((self.n_arm, max_len, self.n_categories))
-
-        # Assessment over all dataset
-        with torch.no_grad():
-            for i, (data, labels) in enumerate(data_loader):
-                data = Variable(data)
-                if self.gpu:
-                    data = data.cuda(self.device)
-
-                data_bin = 0. * data
-                data_bin[data > 0.] = 1.
-                trans_data = []
-                for arm in range(self.n_arm):
-                    if self.aug_file:
-                        noise = torch.randn(data.size(0), self.aug_param['num_n'])
-                        if self.gpu:
-                            noise = noise.cuda(self.device)
-                        _, gen_data = self.netA(data, noise, True, self.device)
-                        if self.aug_param['n_zim'] > 1:
-                            augmented_data = gen_data[:, :self.aug_param['n_features']] * data_bin
-                            trans_data.append(augmented_data)
-                        else:
-                            trans_data.append(gen_data)
-                    else:
-                        trans_data.append(data)
-
-                recon, p_x, x_low, z_category, state, z_smp, mu, log_sigma, _ = self.model(trans_data, self.temp, eval=True, mask=pruning_mask)
-                _, _, _, entropy, dist_z, d_qz, _, min_var_0, _ = self.model.loss(recon, p_x, trans_data, mu, log_sigma, z_category, z_smp, 0)
-                # print(min_var_0)
-
-                for arm in range(self.n_arm):
-                    z_encoder = z_category[arm].cpu().data.view(z_category[arm].size()[0], self.n_categories).detach().numpy()
-                    z_prob[arm, i * batch_size:min((i + 1) * batch_size, max_len), :] = z_encoder
-                    z_samp = z_smp[arm].cpu().data.view(z_smp[arm].size()[0], self.n_categories).detach().numpy()
-                    z_sample[arm, i * batch_size:min((i + 1) * batch_size, max_len), :] = z_samp
-                    label = labels.numpy().astype(int)
-                    class_label[i * batch_size:min((i + 1) * batch_size, max_len)] = label
-                    label_predict = []
-                    for d in range(len(labels)):
-                        z_cat = np.squeeze(z_encoder[d, :])
-                        try:
-                            category_vs_class[arm, label[d] - 1, np.argmax(z_cat)] += 1
-                        except:
-                            stop = 1
-                        label_predict.append(np.argmax(z_cat) + 1)
-
-                    predicted_label[arm, i * batch_size:min((i + 1) * batch_size, max_len)] = np.array(label_predict)
-
-        ari = adjusted_rand_score(class_label, predicted_label[0,:])
-        z_prob_mean = np.mean(z_prob, axis=0)
-        z_sample_mean = np.mean(z_sample, axis=0)
-        unique_class_label = np.unique(ref_label)
-        numCell_per_cluster = np.zeros((self.n_arm, category_vs_class.shape[1]))
-        cluster_per_cat = np.zeros((self.n_arm, category_vs_class.shape[1], category_vs_class.shape[2]))
-        conf_mat_prob = np.zeros((category_vs_class.shape[1], category_vs_class.shape[2]))
-        conf_mat_smp = np.zeros((category_vs_class.shape[1], category_vs_class.shape[2]))
-
-        for arm in range(self.n_arm):
-            for c in range(n_class):
-                if np.sum(category_vs_class[arm, c, :]) > 0:
-                    cluster_per_cat[arm, c, :] = category_vs_class[arm, c, :] / np.sum(category_vs_class[arm, c, :])
-
-        for i, cl in enumerate(unique_class_label):
-            ind = np.where(unique_class_label == cl)[0]
-            conf_mat_prob[i, :] = np.mean(z_prob_mean[ind, :], axis=0)
-            conf_mat_smp[i, :] = np.mean(z_sample_mean[ind, :], axis=0)
-
-        # save data
-        data_file_id = self.folder + '/model/clustering_' + self.current_time
-        self.save_file(data_file_id,
-                       cluster_per_cat=cluster_per_cat,
-                       conf_mat_prob=conf_mat_prob,
-                       conf_mat_smp=conf_mat_smp,
-                       ari=ari,
-                       class_label=class_label,
-                       predicted_label=predicted_label)
-
-        return cluster_per_cat, conf_mat_prob, conf_mat_smp
+        return d_dict
 
 
     def save_file(self, fname, **kwargs):
