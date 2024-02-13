@@ -1,0 +1,28 @@
+# -----------------------------------------------------------------------------
+[project]
+name = "scvae"
+description = "VAE models for single cell RNA-seq data"
+version = "0.1.0"
+requires-python = ">= 3.8"
+#requires-pytorch = ">= 2.0"
+
+authors = [
+  {name = "Yeganeh Marghi", email = "yeganeh.marghi@alleninstitute.org"}
+]
+
+readme = "README.md"
+
+# -----------------------------------------------------------------------------
+[paths]
+main_dir = "./"
+data_path = "data/"
+saving_path = "results/"
+
+# -----------------------------------------------------------------------------
+[files]
+data_file = "Mouse_ALM-VISp_cpm.h5ad"
+htree_file = "tree_Mouse_ALM-VISp_2018.csv"
+ref_gene_file = "genes_SS_ALM-VISp.csv"
+
+
+
