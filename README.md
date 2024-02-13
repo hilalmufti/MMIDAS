@@ -5,7 +5,7 @@ Implementation of [Joint inference of discrete cell types and continuous type-sp
 A generalized and unsupervised mixture variational model with a multi-armed deep neural network, to jointly infer the discrete type and continuous type-specific variability. This framework can be applied to analysis of both, uni-modal and multi-modal datasets. It outperforms comparable models in inferring interpretable discrete and continuous representations of cellular identity, and uncovers novel biological insights. MMIDAS can thus help researchers identify more robust cell types, study cell type-dependent continuous variability, interpret such latent factors in the feature domain, and study multi-modal datasets.
 
 ![](MMIDAS.png)
-## Data
+## Datasets
 - [Allen Institute Mouse Smart-seq dataset](https://portal.brain-map.org/atlases-and-data/rnaseq/mouse-v1-and-alm-smart-seq)
 - [Allen Institute Mouse 10x isocortex dataset](https://assets.nemoarchive.org/dat-jb2f34y)
 - [Allen Institute Patch-seq data](https://dandiarchive.org/dandiset/000020/)
@@ -13,13 +13,43 @@ A generalized and unsupervised mixture variational model with a multi-armed deep
   The electrophysiological features have been computed following the approach in [cplAE_MET/preproc/data_proc_E.py](cplAE_MET/preproc/data_proc_E.py)
 - [Seattle Alzheimer’s disease dataset (SEA-AD)](https://SEA-AD.org/)
 
-## Environment
+### Requirements
+- Python >= 3.9
+- PyTorch >= 2.0
+- CUDA enabled computing device
+
+### Installation
+#### Conda environment
+Creat a new conda environment and activate it.
 ```
-conda create -n mmidas python=3.7
-conda install scipy scikit-learn jupyterlab pandas seaborn
-pip install flatten-json feather-format tensorboard h5py hdf5plugin toml
-# CUDA 11.2
-conda install pytorch==1.7.1 torchvision==0.8.2 torchaudio==0.7.2 pytorch-cuda=11.2 -c pytorch -c nvidia
-# CPU Only
-conda install pytorch==1.11.0 torchvision==0.13.1 torchaudio==0.11.0 cpuonly -c pytorch
+conda create -n mmidas python=3.9
+conda activate mmidas
+```
+Clone the repository and change your working directory to the newly cloned repository's path. Then install all required packages listed in the ```requirement.txt``` file.
+```
+cd <directory you want to place the repo>
+git clone https://github.com/AllenInstitute/MMIDAS
+cd MMIDAS
+python -m pip install -r requirements.txt
+```
+#### Pytorch - CPU only
+```
+conda install pytorch==2.1.1 torchvision==0.16.1 torchaudio==2.1.1 cpuonly -c pytorch
+```
+
+#### Pytorch - GPU
+Generally, PyTorch is compatible with NVIDIA GPUs that support CUDA, as CUDA provides the GPU acceleration process. There has been progress in making PyTorch compatible with Apple's chips, but for now the focus is on CUDA-supported NVIDIA GPUs.
+
+Use ```nvidia-smi``` command to get the installed CUDA version.
+
+Select the appropriate PyTorch installation from [here](https://pytorch.org/get-started/previous-versions/), matching your CUDA version.
+
+```
+# CUDA 12.1
+conda install pytorch==2.1.1 torchvision==0.16.1 torchaudio==2.1.1 pytorch-cuda=12.1 -c pytorch -c nvidia
+```
+
+#### Install ```scvae``` package
+```
+pip install -e .    
 ```
