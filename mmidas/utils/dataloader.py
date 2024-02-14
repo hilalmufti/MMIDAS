@@ -1,6 +1,4 @@
-import scipy.io as sio
 import numpy as np
-import pandas as pd
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from scipy.special import softmax
 import anndata
@@ -20,6 +18,8 @@ def load_data(datafile, n_gene=0, gene_id=[], rmv_type=[], min_num=10, eps=1e-1,
     anno_key = adata.obs.keys()
     for key in anno_key:
         data[key] = adata.obs[key].values
+        if key == 'cluster':
+            data['cluster_label'] = adata.obs[key].values
 
     if n_gene == 0:
         n_gene = len(data['gene_id'])
@@ -35,20 +35,18 @@ def load_data(datafile, n_gene=0, gene_id=[], rmv_type=[], min_num=10, eps=1e-1,
         data['log1p'] = data['log1p'][:, :n_gene].todense()
 
     for ttype in rmv_type:
-        ind = np.where(data['cluster'] == ttype)[0]
         for key in data:
             if key not in ['gene_id']:
                 data[key] = np.delete(data[key], ind, axis=0)
 
-    uniq_clusters = np.unique(data['cluster'])
     count = np.zeros(len(uniq_clusters))
     for it, tt in enumerate(uniq_clusters):
-        count[it] = sum(data['cluster'] == tt)
+        count[it] = sum(data['cluster_label'] == tt)
 
     uniq_clusters = uniq_clusters[count >= min_num]
-    data['cluster_id'] = np.zeros(len(data['cluster']))
-    for ic, cls_ord in enumerate(np.unique(data['cluster'])):
-        data['cluster_id'][data['cluster'] == cls_ord] = int(ic + 1)
+    data['cluster_id'] = np.zeros(len(data['cluster_label']))
+    for ic, cls_ord in enumerate(np.unique(data['cluster_label'])):
+        data['cluster_id'][data['cluster_label'] == cls_ord] = int(ic + 1)
 
     label_encoder = LabelEncoder()
     integer_encoded = label_encoder.fit_transform(data['cluster_id'])
@@ -56,10 +54,10 @@ def load_data(datafile, n_gene=0, gene_id=[], rmv_type=[], min_num=10, eps=1e-1,
     integer_encoded = integer_encoded.reshape(len(integer_encoded), 1)
     data['c_onehot'] = onehot_encoder.fit_transform(integer_encoded)
     data['c_p'] = softmax((data['c_onehot'] + eps) / tau, axis=1)
-    data['n_type'] = len(np.unique(data['cluster']))
+    data['n_type'] = len(np.unique(data['cluster_label']))
 
     print(' --------- Data Summary --------- ')
-    print(f'num cell types: {len(np.unique(data["cluster"]))}, num cells: {data["log1p"].shape[0]}, num genes:{len(data["gene_id"])}')
+    print(f'num cell types: {len(np.unique(data["cluster_label"]))}, num cells: {data["log1p"].shape[0]}, num genes:{len(data["gene_id"])}')
     
     return data
 

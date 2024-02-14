@@ -4,7 +4,7 @@ import toml
 from pathlib import Path
 from sklearn.preprocessing import normalize
 
-def get_paths(toml_file, verbose=False):
+def get_paths(toml_file, sub_file='files', verbose=False):
     """Loads dictionary with path names and any other variables set through xxx.toml
 
     Args:
@@ -14,8 +14,9 @@ def get_paths(toml_file, verbose=False):
         config: dict
     """
 
-    package_dir = Path(__file__).parent.parent.parent.absolute()
+    package_dir = Path().resolve()
     config_file = package_dir / toml_file
+    print(config_file)
 
     if not Path(config_file).is_file():
         print(f'Did not find project`s toml file: {config_file}')
@@ -35,10 +36,11 @@ def get_paths(toml_file, verbose=False):
             for key2 in config['paths']:
                 if Path(config['paths'][key2]).exists():
                     config['paths'][key2] = Path(config['paths'][key2])
-        if key=='files':
-            for key2 in config['files']:
-                if Path(config['files'][key2]).exists():
-                    config['files'][key2] = Path(config['files'][key2])
+        if key==sub_file:
+            print(f'Getting files directories belong to {sub_file}...')
+            for key2 in config[sub_file]:
+                if Path(config[sub_file][key2]).exists():
+                    config[sub_file][key2] = Path(config[sub_file][key2])
 
     return config
 
