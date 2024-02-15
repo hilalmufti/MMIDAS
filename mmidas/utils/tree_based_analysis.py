@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
-from utils.analysis_cells_tree import HTree, do_merges
+from mmidas.utils.analysis_cells_tree import HTree, do_merges
 from matplotlib.backends.backend_pdf import PdfPages
-#from cplmix.utils.celltype_hierarchy import hierarchy_plot, cell_nodes_dict, heatmap_plot
 import scipy.stats as stats
 from sklearn.linear_model import LinearRegression
 import numpy as np
