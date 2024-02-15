@@ -235,9 +235,9 @@ class cpl_mixVAE:
                     for cc in range(self.n_categories):
                         train_loss_KL[arm, cc, epoch] = train_KLD_cont[arm, cc] / (batch_indx + 1)
 
-                print('====> Epoch:{}, Total Loss: {:.4f}, Loss_arm1: {'':.4f}, Joint Loss: {:.4f}, '
+                print('====> Epoch:{}, Total Loss: {:.4f}, Rec_arm_1: {'':.4f}, Rec_arm_2: {'':.4f}, Joint Loss: {:.4f}, '
                       'Entropy: {:.4f}, d_logqz: {:.4f}, d_qz: {:.4f}, var_min: {:.4f}, Elapsed Time:{:.2f}'.format(
-                    epoch, train_loss[epoch], train_recon[0, epoch], train_loss_joint[epoch],
+                    epoch, train_loss[epoch], train_recon[0, epoch], train_recon[1, epoch], train_loss_joint[epoch],
                     train_entropy[epoch], train_log_distance[epoch], train_distance[epoch], train_minVar[epoch], time.time() - t0))
 
                 # validation
@@ -267,7 +267,7 @@ class cpl_mixVAE:
 
                 validation_loss[epoch] = val_loss_rec / (batch_indx + 1) / self.n_arm
                 # total_val_loss[epoch] = val_loss / (batch_indx + 1)
-                print('====> Validation Loss: {:.4f}'.format(validation_loss[epoch]))
+                print('====> Validation Rec. Loss: {:.4f}'.format(validation_loss[epoch]))
 
             if self.save and n_epoch > 0:
                 trained_model = self.folder + '/model/cpl_mixVAE_model_before_pruning_' + self.current_time + '.pth'
@@ -324,7 +324,7 @@ class cpl_mixVAE:
 
                     for arm in range(self.n_arm):
                         z_encoder = z_category[arm].cpu().data.view(z_category[arm].size()[0], self.n_categories).detach().numpy()
-                        predicted_label[arm, i * self.batch_size:min((i + 1) * self.batch_size, len(test_loader.dataset))] = np.argmax(z_encoder, axis=1)
+                        predicted_label[arm, i * self.batch_size:min((i + 1) * self.batch_size, len(train_loader.dataset))] = np.argmax(z_encoder, axis=1)
 
             c_agreement = []
             for arm_a in range(self.n_arm):
@@ -484,8 +484,8 @@ class cpl_mixVAE:
                         for c in range(self.n_categories):
                             train_loss_KL[arm, c, epoch] = train_KLD_cont[arm, c] / (batch_indx + 1)
 
-                    print('====> Epoch:{}, Total Loss: {:.4f}, Loss_1: {'
-                          ':.4f}, Loss_2: {:.4f}, Joint Loss: {:.4f}, '
+                    print('====> Epoch:{}, Total Loss: {:.4f}, Rec_arm_1: {'
+                          ':.4f}, Rec_arm_2: {:.4f}, Joint Loss: {:.4f}, '
                           'Entropy: {:.4f}, d_logqz: {:.4f}, '
                           'd_qz: {:.4f}, var_min: {:.4f}, Elapsed Time:{:.2f}'.format(
                         epoch, train_loss[epoch], train_recon[0, epoch],
@@ -524,7 +524,7 @@ class cpl_mixVAE:
 
                     validation_loss[epoch] = val_loss_rec / (batch_indx + 1) / self.n_arm
                     total_val_loss[epoch] = val_loss / (batch_indx + 1)
-                    print('====> Validation Loss: {:.4f}'.format(validation_loss[epoch]))
+                    print('====> Validation Rec. Loss: {:.4f}'.format(validation_loss[epoch]))
 
                 for arm in range(self.n_arm):
                     prune.remove(self.model.fcc[arm], 'weight')
