@@ -126,76 +126,64 @@ def cluster_compare(data, labels, num_pc=0, saving_path=''):
     return fig, silh_smp_score, sil_score, c_size
 
 
-def K_selection(cplmixVAE_data, num_category, n_arm):
+def K_selection(data_dict, num_category, n_arm, thr=0.95):
 
     n_comb = max(n_arm * (n_arm - 1) / 2, 1)
 
     with sns.axes_style("darkgrid"):
-        # cplmixVAE_data = pickle.load(open(cplmixVAE_model, 'rb'))
-        cplmixVAE_data['num_pruned'] = np.array(cplmixVAE_data['num_pruned'])
-        cplmixVAE_data['dz'] = np.array(cplmixVAE_data['dz'])
-        cplmixVAE_data['d_qz'] = np.array(cplmixVAE_data['d_qz'])
-        cplmixVAE_data['con_min'] = np.array(cplmixVAE_data['con_min'])
-        cplmixVAE_data['con_min'] = np.reshape(cplmixVAE_data['con_min'], (int(n_comb), len(cplmixVAE_data['d_qz'])))
-        cplmixVAE_data['con_mean'] = np.array(cplmixVAE_data['con_mean'])
-        cplmixVAE_data['con_mean'] = np.reshape(cplmixVAE_data['con_mean'], (int(n_comb), len(cplmixVAE_data['d_qz'])))
-        indx = np.argsort(cplmixVAE_data['num_pruned'])
+        data_dict['num_pruned'] = np.array(data_dict['num_pruned'])
+        data_dict['dz'] = np.array(data_dict['dz'])
+        data_dict['d_qz'] = np.array(data_dict['d_qz'])
+        data_dict['con_min'] = np.array(data_dict['con_min'])
+        data_dict['con_min'] = np.reshape(data_dict['con_min'], (int(n_comb), len(data_dict['d_qz'])))
+        data_dict['con_mean'] = np.array(data_dict['con_mean'])
+        data_dict['con_mean'] = np.reshape(data_dict['con_mean'], (int(n_comb), len(data_dict['d_qz'])))
+        indx = np.argsort(data_dict['num_pruned'])
+        norm_aitchison_dist = data_dict['dz'] - np.min(data_dict['dz'])
+        norm_aitchison_dist = norm_aitchison_dist / np.max(norm_aitchison_dist)
         recon_loss = []
         norm_recon = []
 
         for a in range(n_arm):
-            recon_loss.append(np.array(cplmixVAE_data['recon_loss'][a]))
+            recon_loss.append(np.array(data_dict['recon_loss'][a]))
             # print(np.min(recon_loss[a]),  np.max(recon_loss[a]))
             tmp = recon_loss[a] - np.min(recon_loss[a])
             norm_recon.append(tmp / np.max(tmp))
             # norm_recon.append(recon_loss[a])
 
         norm_recon_mean = np.mean(norm_recon, axis=0)
-        neg_cons = 1 - np.mean(cplmixVAE_data['con_mean'], axis=0)
-        mean_cost = (neg_cons + norm_recon_mean) / 2 # cplmixVAE_data['d_qz']
-        cost = []
+        neg_cons = 1 - np.mean(data_dict['con_mean'], axis=0)
+        consensus = np.mean(data_dict['con_mean'], axis=0)
+        mean_cost = (neg_cons + norm_recon_mean + norm_aitchison_dist) / 3 # cplmixVAE_data['d_qz']
+        
+        # suggest the number of clusters
+        tmp_ind = np.where(consensus[indx] > thr)[0]
+        ordered_cons = consensus[indx]
+        for tt in range(len(tmp_ind)):
+            i = len(tmp_ind) - tt - 1
+            coeff = (np.abs(ordered_cons[tmp_ind[i]] - ordered_cons[tmp_ind[i]-1]) + 
+                     np.abs(ordered_cons[tmp_ind[i]] - ordered_cons[tmp_ind[i]+1])) / 2
+            coeff = np.round(coeff, 3)
+            if coeff < 5e-3:
+                break
+        selected_idx = tmp_ind[i]   
 
-        fig_1 = plt.figure(figsize=[10, 5])
-        for a in range(n_arm):
-            cost.append((cplmixVAE_data['d_qz'] + norm_recon[a] + neg_cons))
-            ax1 = fig_1.add_subplot()
-            ax1.plot(cplmixVAE_data['num_pruned'][indx], recon_loss[a][indx], label='Norm. Recon. Error')
-
-        ax1.plot(cplmixVAE_data['num_pruned'][indx], cplmixVAE_data['d_qz'][indx], label='Dist. q(c)')
-        ax1.plot(cplmixVAE_data['num_pruned'][indx], neg_cons[indx], label='Mean -Consensus')
-        ax1.set_xlim([np.min(cplmixVAE_data['num_pruned'][indx])-1, num_category + 1])
-        ax1.set_xlabel('Categories')
-        ax1.set_xticks(cplmixVAE_data['num_pruned'][indx])
-        ax1.set_xticklabels(cplmixVAE_data['num_pruned'][indx], fontsize=8, rotation=90)
-        ax1.legend(loc='upper left')
-        ax1.grid(b=True, which='major', linestyle='-')
-
-        sdt = np.std(np.array(cost), axis=0)
-        fig_2 = plt.figure(figsize=[10, 5])
-        ax2 = fig_2.add_subplot()
-        ax2.plot(cplmixVAE_data['num_pruned'][indx], mean_cost[indx], label=str(n_arm) + ' arms', c='black')
-        ax2.fill_between(cplmixVAE_data['num_pruned'][indx], mean_cost[indx] - sdt[indx], mean_cost[indx] + sdt[indx], alpha=0.3, facecolor='black')
-        ax2.set_xticks(cplmixVAE_data['num_pruned'][indx])
-        ax2.set_xticklabels(cplmixVAE_data['num_pruned'][indx], fontsize=8, rotation=90)
-        ax2.set_ylabel('Norm. Ave. Cost')
-        ax2.set_xlabel('Categories')
-        ax2.legend()
-        ax2.grid()
-
-        fig_3 = plt.figure(figsize=[10, 5])
-        ax3 = fig_3.add_subplot()
-        ax3.plot(cplmixVAE_data['num_pruned'][indx], np.mean(cplmixVAE_data['con_min'], axis=0)[indx], label='Min Consensus')
-        ax3.plot(cplmixVAE_data['num_pruned'][indx], cplmixVAE_data['d_qz'][indx], label='Dist. q(c)')
-        ax3.plot(cplmixVAE_data['num_pruned'][indx], neg_cons[indx], label='Mean Consensus')
-        ax3.set_xlim([np.min(cplmixVAE_data['num_pruned'][indx]) - 1, num_category + 1])
-        ax3.set_xlabel('Categories')
-        ax3.set_xticks(cplmixVAE_data['num_pruned'][indx])
-        ax3.set_xticklabels(cplmixVAE_data['num_pruned'][indx], fontsize=8, rotation=90)
-        ax3.legend(loc='upper left')
-        ax3.grid(b=True, which='major', linestyle='-')
-
+        fig = plt.figure(figsize=[10, 5])
+        ax = fig.add_subplot()
+        ax.plot(data_dict['num_pruned'][indx], data_dict['d_qz'][indx], label='Average Distance')
+        ax.plot(data_dict['num_pruned'][indx], neg_cons[indx], label='Average Dissent (1 - Consensus)')
+        ax.set_xlim([np.min(data_dict['num_pruned'][indx])-1, num_category + 1])
+        ax.set_xlabel('Categories', fontsize=14)
+        ax.set_xticks(data_dict['num_pruned'][indx])
+        ax.set_xticklabels(data_dict['num_pruned'][indx], fontsize=8, rotation=90)
+        ax.vlines(data_dict['num_pruned'][indx][selected_idx], 0, 1, colors='gray', linestyles='dotted')
+        ax.hlines(neg_cons[indx][selected_idx], min(data_dict['num_pruned']), max(data_dict['num_pruned']), colors='gray', linestyles='dotted')
+        ax.legend(loc='upper right')
+        ax.set_ylim([0, 1])
+        ax.grid(True)
         plt.show()
-        return cplmixVAE_data['num_pruned'], mean_cost, sdt, cplmixVAE_data['con_mean'], cplmixVAE_data['con_min'], indx
+        print(f"Selected number of clusters: {data_dict['num_pruned'][indx][selected_idx]} with consensus {consensus[indx][selected_idx]}")
+        return data_dict['num_pruned'], mean_cost, consensus, indx, data_dict['num_pruned'][indx][selected_idx]
 
 
 
