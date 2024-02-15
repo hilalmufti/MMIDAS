@@ -412,7 +412,7 @@ class cpl_mixVAE:
                 stop_prune = True
 
             if not stop_prune:
-                print("Training with pruning...")
+                print("Continue training with pruning ...")
                 print(f"Purned categories: {ind}")
                 bias = bias_mask.detach().cpu().numpy()
                 pruning_mask = np.where(bias != 0.)[0]
@@ -571,6 +571,8 @@ class cpl_mixVAE:
                     self.n_categories) + '_' + self.current_time + '.png')
                 plt.close("all")
                 pr += 1
+        
+        print('Training is done!')
     
         return trained_model
 

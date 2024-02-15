@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from utils.augmentation.aug_utils import *
+from mmidas.augmentation.aug_utils import *
 
 
 class Augmenter(nn.Module):
