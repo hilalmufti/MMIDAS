@@ -151,8 +151,7 @@ class cpl_mixVAE:
         train_log_distance = np.zeros(n_epoch)
         train_recon = np.zeros((self.n_arm, n_epoch))
         train_loss_KL = np.zeros((self.n_arm, self.n_categories, n_epoch))
-        z_train_prob = np.zeros((self.n_arm, len(train_loader.dataset), self.n_categories))
-        train_class_label = np.zeros(len(train_loader.dataset))
+        validation_rec_loss = np.zeros(n_epoch)
         bias_mask = torch.ones(self.n_categories)
         weight_mask = torch.ones((self.n_categories, self.lowD_dim))
         fc_mu = torch.ones((self.state_dim, self.n_categories + self.lowD_dim))
@@ -265,9 +264,9 @@ class cpl_mixVAE:
                         for arm in range(self.n_arm):
                             val_loss_rec += loss_rec[arm].data.item() / self.input_dim
 
-                validation_loss[epoch] = val_loss_rec / (batch_indx + 1) / self.n_arm
-                # total_val_loss[epoch] = val_loss / (batch_indx + 1)
-                print('====> Validation Rec. Loss: {:.4f}'.format(validation_loss[epoch]))
+                validation_rec_loss[epoch] = val_loss_rec / (batch_indx + 1) / self.n_arm
+                validation_loss[epoch] = val_loss / (batch_indx + 1)
+                print('====> Validation Total Loss: {:.4f}, Rec. Loss: {:.4f}'.format(validation_loss[epoch], validation_rec_loss[epoch]))
 
             if self.save and n_epoch > 0:
                 trained_model = self.folder + '/model/cpl_mixVAE_model_before_pruning_' + self.current_time + '.pth'
@@ -288,7 +287,6 @@ class cpl_mixVAE:
                 ax.figure.savefig(self.folder + '/model/learning_curve_before_pruning_K_' + str(self.n_categories) + '_' + self.current_time + '.png')
                 plt.close("all")
 
-        
         if n_epoch_p > 0:
             # initialized pruning parameters of the layer of the discrete variable
             bias = self.model.fcc[0].bias.detach().cpu().numpy()
@@ -357,6 +355,7 @@ class cpl_mixVAE:
                     plt.yticks([])
                     plt.title('|c|=' + str(self.n_categories), fontsize=20)
                     plt.savefig(self.folder + '/consensus_' + str(pr) + '_arm_' + str(arm_a) + '_arm_' + str(arm_b) + '.png', dpi=600)
+                    plt.close("all")
 
             c_agreement = np.mean(c_agreement, axis=0)
             agreement = c_agreement[pruning_mask]
@@ -375,7 +374,6 @@ class cpl_mixVAE:
                     ind = np.array(ind)
 
                 ind = ind.astype(int)
-                print(ind)
                 bias_mask[ind] = 0.
                 weight_mask[ind, :] = 0.
                 fc_mu[:, self.lowD_dim + ind] = 0.
@@ -388,10 +386,11 @@ class cpl_mixVAE:
 
             if not stop_prune:
                 print("Training with pruning...")
+                print(f"Purned categories: {ind}")
                 bias = bias_mask.detach().cpu().numpy()
                 pruning_mask = np.where(bias != 0.)[0]
                 train_loss = np.zeros(n_epoch_p)
-                validation_loss = np.zeros(n_epoch_p)
+                validation_rec_loss = np.zeros(n_epoch_p)
                 total_val_loss = np.zeros(n_epoch_p)
                 train_loss_joint = np.zeros(n_epoch_p)
                 train_entropy = np.zeros(n_epoch_p)
@@ -517,9 +516,9 @@ class cpl_mixVAE:
                             for arm in range(self.n_arm):
                                 val_loss_rec += loss_rec[arm].data.item() / self.input_dim
 
-                    validation_loss[epoch] = val_loss_rec / (batch_indx + 1) / self.n_arm
+                    validation_rec_loss[epoch] = val_loss_rec / (batch_indx + 1) / self.n_arm
                     total_val_loss[epoch] = val_loss / (batch_indx + 1)
-                    print('====> Validation Rec. Loss: {:.4f}'.format(validation_loss[epoch]))
+                    print('====> Validation Total Loss: {:.4}, Rec. Loss: {:.4f}'.format(total_val_loss[epoch], validation_rec_loss[epoch]))
 
                 for arm in range(self.n_arm):
                     prune.remove(self.model.fcc[arm], 'weight')
