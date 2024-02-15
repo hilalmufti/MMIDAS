@@ -24,6 +24,41 @@ saving_path = "results/"
 anndata_file = "Mouse_ALM-VISp_cpm.h5ad"
 htree_file = "tree_Mouse_ALM-VISp_2018.csv"
 ref_gene_file = "genes_SS_ALM-VISp.csv"
+aug_model = ""
+trained_model = ""
+
+# -----------------------------------------------------------------------------
+[10x_gaba_files]
+anndata_file = ""
+htree_file = "tree_Mouse_cortex_2020.csv"
+aug_model = ""
+trained_model = ""
+
+# -----------------------------------------------------------------------------
+[10x_glum_files]
+anndata_file = ""
+htree_file = "tree_Mouse_cortex_2020.csv"
+aug_model = ""
+trained_model = ""
+
+# -----------------------------------------------------------------------------
+[patchseq_files]
+anndata_file = ""
+htree_file = "tree_Mouse_ALM-VISp_2018.csv"
+ref_gene_file = "genes_Patchseq.csv"
+aug_model = ""
+trained_model = ""
+
+# -----------------------------------------------------------------------------
+[AD_files]
+anndata_file = ""
+htree_file = "tree_human_MTG_2023.csv"
+aug_model = ""
+trained_model = ""
+
+
+
+
 
 
 
