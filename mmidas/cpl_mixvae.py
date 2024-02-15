@@ -236,9 +236,9 @@ class cpl_mixVAE:
                         train_loss_KL[arm, cc, epoch] = train_KLD_cont[arm, cc] / (batch_indx + 1)
 
                 print('====> Epoch:{}, Total Loss: {:.4f}, Rec_arm_1: {'':.4f}, Rec_arm_2: {'':.4f}, Joint Loss: {:.4f}, '
-                      'Entropy: {:.4f}, d_logqz: {:.4f}, d_qz: {:.4f}, var_min: {:.4f}, Elapsed Time:{:.2f}'.format(
+                      'Entropy: {:.4f}, Distance: {:.4f}, Elapsed Time:{:.2f}'.format(
                     epoch, train_loss[epoch], train_recon[0, epoch], train_recon[1, epoch], train_loss_joint[epoch],
-                    train_entropy[epoch], train_log_distance[epoch], train_distance[epoch], train_minVar[epoch], time.time() - t0))
+                    train_entropy[epoch], train_distance[epoch], time.time() - t0))
 
                 # validation
                 self.model.eval()
@@ -334,7 +334,7 @@ class cpl_mixVAE:
                     armA_vs_armB = np.zeros((self.n_categories, self.n_categories))
 
                     for samp in range(pred_a.shape[0]):
-                        armA_vs_armB[np.int(pred_a[samp]), np.int(pred_b[samp])] += 1
+                        armA_vs_armB[pred_a[samp].astype(int), pred_b[samp].astype(int)] += 1
 
                     num_samp_arm = []
                     for ij in range(self.n_categories):
@@ -485,14 +485,9 @@ class cpl_mixVAE:
                             train_loss_KL[arm, c, epoch] = train_KLD_cont[arm, c] / (batch_indx + 1)
 
                     print('====> Epoch:{}, Total Loss: {:.4f}, Rec_arm_1: {'
-                          ':.4f}, Rec_arm_2: {:.4f}, Joint Loss: {:.4f}, '
-                          'Entropy: {:.4f}, d_logqz: {:.4f}, '
-                          'd_qz: {:.4f}, var_min: {:.4f}, Elapsed Time:{:.2f}'.format(
-                        epoch, train_loss[epoch], train_recon[0, epoch],
-                        train_recon[1, epoch], train_loss_joint[epoch],
-                        train_entropy[epoch], train_log_distance[epoch],
-                        train_distance[epoch], train_minVar[epoch],
-                        time.time() - t0))
+                          ':.4f}, Rec_arm_2: {:.4f}, Joint Loss: {:.4f}, Entropy: {:.4f}, Distance: {:.4f}, Elapsed Time:{:.2f}'.format(
+                        epoch, train_loss[epoch], train_recon[0, epoch], train_recon[1, epoch], train_loss_joint[epoch],
+                        train_entropy[epoch], train_distance[epoch], time.time() - t0))
 
                     # validation
                     self.model.eval()
@@ -501,8 +496,8 @@ class cpl_mixVAE:
                         val_loss = 0.
                         for batch_indx, (data_val, d_idx), in enumerate(test_loader):
                             d_idx = d_idx.to(int)
-                            if self.gpu:
-                                data_val = data_val.cuda(self.device)
+                            data_val = data_val.to(self.device)
+                                
                             trans_val_data = []
                             for arm in range(self.n_arm):
                                 trans_val_data.append(data_val)
