@@ -132,6 +132,7 @@ class cpl_mixVAE:
             n_epoch: number of training epoch, without pruning.
             n_epoch_p: number of training epoch, with pruning.
             c_p: the prior categorical variable, only if ref_prior is True.
+            c_onehot: the one-hot representation of the prior categorical variable, only if ref_prior is True.
             min_con: minimum value of consensus among pair of arms.
             max_prun_it: maximum number of pruning iterations.
             mode: the loss function, either 'MSE' or 'ZINB'.
@@ -164,7 +165,7 @@ class cpl_mixVAE:
         fc_mu = fc_mu.to(self.device)
         fc_sigma = fc_sigma.to(self.device)
         f6_mask = f6_mask.to(self.device)
-        self.batch_size = train_loader.batch_size
+        batch_size = train_loader.batch_size
 
         if self.init:
             print("Start training ...")
@@ -188,7 +189,7 @@ class cpl_mixVAE:
                     tt = time.time()
                     for arm in range(self.n_arm):
                         if self.aug_file:
-                            noise = torch.randn(self.batch_size, self.aug_param['num_n'], device=self.device)
+                            noise = torch.randn(batch_size, self.aug_param['num_n'], device=self.device)
                             _, gen_data = self.netA(data, noise, True, self.device)
                             if self.aug_param['n_zim'] > 1:
                                 data_bin = 0. * data
@@ -349,7 +350,7 @@ class cpl_mixVAE:
 
                     for arm in range(self.n_arm):
                         z_encoder = z_category[arm].cpu().data.view(z_category[arm].size()[0], self.n_categories).detach().numpy()
-                        predicted_label[arm, i * self.batch_size:min((i + 1) * self.batch_size, len(train_loader.dataset))] = np.argmax(z_encoder, axis=1)
+                        predicted_label[arm, i * batch_size:min((i + 1) * batch_size, len(train_loader.dataset))] = np.argmax(z_encoder, axis=1)
 
             c_agreement = []
             for arm_a in range(self.n_arm):
@@ -461,7 +462,7 @@ class cpl_mixVAE:
                         w_param, bias_param, activ_param = 0, 0, 0
                         for arm in range(self.n_arm-1):
                             if self.aug_file:
-                                noise = torch.randn(self.batch_size, self.aug_param['num_n']).to(self.device)
+                                noise = torch.randn(batch_size, self.aug_param['num_n']).to(self.device)
                                 _, gen_data = self.netA(data, noise, True, self.device)
                                 if self.aug_param['n_zim'] > 1:
                                     data_bin = 0. * data
@@ -520,10 +521,34 @@ class cpl_mixVAE:
                     with torch.no_grad():
                         val_loss_rec = 0.
                         val_loss = 0.
-                        for batch_indx, (data_val, d_idx), in enumerate(test_loader):
-                            d_idx = d_idx.to(int)
+                        if test_loader.batch_size > 1:
+                            for batch_indx, (data_val, d_idx), in enumerate(test_loader):
+                                d_idx = d_idx.to(int)
+                                data_val = data_val.to(self.device)
+                                    
+                                trans_val_data = []
+                                for arm in range(self.n_arm):
+                                    trans_val_data.append(data_val)
+
+                                if self.ref_prior:
+                                    c_bin = torch.FloatTensor(c_onehot[d_idx, :]).to(self.device)
+                                    prior_c = torch.FloatTensor(c_p[d_idx, :]).to(self.device)
+                                else:
+                                    c_bin = 0.
+                                    prior_c = 0.
+
+                                recon_batch, p_x, r_x, x_low, qc, s, c, mu, log_var, _ = self.model(x=trans_val_data, temp=self.temp, prior_c=prior_c,
+                                                                                        eval=True, mask=pruning_mask)
+                                loss, loss_rec, loss_joint, _, _, _, _, _, _ = self.model.loss(recon_batch, p_x, r_x, trans_val_data,
+                                                                                            mu, log_var, qc, c, c_bin)
+                                val_loss += loss.data.item()
+                                for arm in range(self.n_arm):
+                                    val_loss_rec += loss_rec[arm].data.item() / self.input_dim
+                        else:
+                            batch_indx = 0
+                            data_val, d_idx = test_loader.dataset.tensors
                             data_val = data_val.to(self.device)
-                                
+                            d_idx = d_idx.to(int)
                             trans_val_data = []
                             for arm in range(self.n_arm):
                                 trans_val_data.append(data_val)
@@ -536,12 +561,13 @@ class cpl_mixVAE:
                                 prior_c = 0.
 
                             recon_batch, p_x, r_x, x_low, qc, s, c, mu, log_var, _ = self.model(x=trans_val_data, temp=self.temp, prior_c=prior_c,
-                                                                                      eval=True, mask=pruning_mask)
+                                                                                    eval=True, mask=pruning_mask)
                             loss, loss_rec, loss_joint, _, _, _, _, _, _ = self.model.loss(recon_batch, p_x, r_x, trans_val_data,
-                                                                                           mu, log_var, qc, c, c_bin)
-                            val_loss += loss.data.item()
+                                                                                        mu, log_var, qc, c, c_bin)
+                            val_loss = loss.data.item()
                             for arm in range(self.n_arm):
                                 val_loss_rec += loss_rec[arm].data.item() / self.input_dim
+                            
 
                     validation_rec_loss[epoch] = val_loss_rec / (batch_indx + 1) / self.n_arm
                     total_val_loss[epoch] = val_loss / (batch_indx + 1)
@@ -577,27 +603,19 @@ class cpl_mixVAE:
         return trained_model
 
 
-    def eval_model(self, data_mat, c_p=[], batch_size=1000, mode='MSE'):
+    def eval_model(self, data_loader, c_p=0, c_onehot=0):
         """
         run the training of the cpl-mixVAE with the pre-defined parameters/settings
         pcikle used for saving the file
 
         input args
-            data_mat: the input data matrix for evaluation.
+            data_loader: input data loader
             c_p: the prior categorical variable, only if ref_prior is True.
-            batch_size: the batch size for the evaluation.
-            mode: the loss function, either 'MSE' or 'ZINB'.
+            c_onehot: the one-hot representation of the prior categorical variable, only if ref_prior is True.
 
         return
             d_dict: the output dictionary.
         """
-
-        data_set_troch = torch.FloatTensor(data_mat)
-        indx_set_troch = torch.FloatTensor(np.arange(data_mat.shape[0]))
-        all_data = TensorDataset(data_set_troch, indx_set_troch)
-        self.batch_size = batch_size
-
-        data_loader = DataLoader(all_data, batch_size=batch_size, shuffle=False, drop_last=False, pin_memory=True)
 
         self.model.eval()
         bias = self.model.fcc[0].bias.detach().cpu().numpy()
@@ -626,57 +644,109 @@ class cpl_mixVAE:
         total_loglikelihood = [[] for a in range(self.n_arm)]
 
         self.model.eval()
+        batch_size = data_loader.batch_size
+
         with torch.no_grad():
-            for i, (data, data_idx) in enumerate(data_loader):
+            if batch_size > 1:
+                for i, (data, data_idx) in enumerate(data_loader):
+                    data = data.to(self.device)
+                    data_idx = data_idx.to(int)
+                    
+                    if self.ref_prior:
+                        c_bin = torch.FloatTensor(c_onehot[data_idx, :]).to(self.device)
+                        prior_c = torch.FloatTensor(c_p[data_idx, :]).to(self.device)
+                    else:
+                        c_bin = 0.
+                        prior_c = 0.
+
+                    trans_data = []
+                    for arm in range(self.n_arm):
+                        trans_data.append(data)
+
+                    recon, p_x, r_x, x_low, z_category, state, z_smp, mu, log_sigma, _ = self.model(trans_data, self.temp, prior_c=prior_c, eval=True, mask=pruning_mask)
+                    loss, loss_arms, loss_joint, _, dist_z, d_qz, _, _, loglikelihood = self.model.loss(recon, p_x, r_x, trans_data, mu, log_sigma, z_category, z_smp, c_bin)
+                    total_loss_val.append(loss.data.item())
+                    total_dist_z.append(dist_z.data.item())
+                    total_dist_qz.append(d_qz.data.item())
+
+                    if self.ref_prior:
+                        predicted_label[0, i * batch_size:min((i + 1) * batch_size, max_len)] = np.argmax(c_p[data_idx, :], axis=1) + 1
+
+                    for arm in range(self.n_arm):
+                        total_loss_rec[arm].append(loss_arms[arm].data.item())
+                        total_loglikelihood[arm].append(loglikelihood[arm].data.item())
+
+                    for arm in range(self.n_arm):
+                        state_sample[arm, i * batch_size:min((i + 1) * batch_size, max_len), :] = state[arm].cpu().detach().numpy()
+                        state_mu[arm, i * batch_size:min((i + 1) * batch_size, max_len), :] = mu[arm].cpu().detach().numpy()
+                        state_var[arm, i * batch_size:min((i + 1) * batch_size, max_len), :] = log_sigma[arm].cpu().detach().numpy()
+                        z_encoder = z_category[arm].cpu().data.view(z_category[arm].size()[0], self.n_categories).detach().numpy()
+                        z_prob[arm, i * batch_size:min((i + 1) * batch_size, max_len), :] = z_encoder
+                        z_samp = z_smp[arm].cpu().data.view(z_smp[arm].size()[0], self.n_categories).detach().numpy()
+                        z_sample[arm, i * batch_size:min((i + 1) * batch_size, max_len), :] = z_samp
+                        data_low[arm,  i * batch_size:min((i + 1) * batch_size, max_len), :] = x_low[arm].detach().cpu().numpy()
+                        label = data_idx.numpy().astype(int)
+                        data_indx[i * batch_size:min((i + 1) * batch_size, max_len)] = label
+                        recon_cell[arm, i * batch_size:min((i + 1) * batch_size, max_len), :] = recon[arm].cpu().detach().numpy()
+
+                        for n in range(z_encoder.shape[0]):
+                            state_cat[arm, i * batch_size + n] = np.argmax(z_encoder[n, :]) + 1
+                            prob_cat[arm, i * batch_size + n] = np.max(z_encoder[n, :])
+
+                        if self.ref_prior:
+                            predicted_label[arm+1, i * batch_size:min((i + 1) * batch_size, max_len)] = np.argmax(z_encoder, axis=1) + 1
+                        else:
+                            predicted_label[arm, i * batch_size:min((i + 1) * batch_size, max_len)] = np.argmax(z_encoder, axis=1) + 1
+
+            else:
+                i = 0
+                data, data_idx = data_loader.dataset.tensors
                 data = data.to(self.device)
                 data_idx = data_idx.to(int)
-                
                 if self.ref_prior:
-                    # c_bin = torch.FloatTensor(c_onehot[data_idx, :]).to(self.device)
+                    c_bin = torch.FloatTensor(c_onehot[data_idx, :]).to(self.device)
                     prior_c = torch.FloatTensor(c_p[data_idx, :]).to(self.device)
                 else:
                     c_bin = 0.
                     prior_c = 0.
-
                 trans_data = []
                 for arm in range(self.n_arm):
                     trans_data.append(data)
 
-                recon, p_x, r_x, x_low, z_category, state, z_smp, mu, log_sigma, _ = self.model(trans_data, self.temp, eval=True, mask=pruning_mask)
-                loss, loss_arms, loss_joint, _, dist_z, d_qz, _, _, loglikelihood = self.model.loss(recon, p_x, r_x, trans_data, mu, log_sigma, z_category, z_smp, prior_c, mode)
-                total_loss_val.append(loss.data.item())
-                total_dist_z.append(dist_z.data.item())
-                total_dist_qz.append(d_qz.data.item())
-
+                recon, p_x, r_x, x_low, z_category, state, z_smp, mu, log_sigma, _ = self.model(trans_data, self.temp, prior_c=prior_c, eval=True, mask=pruning_mask)
+                loss, loss_arms, loss_joint, _, dist_z, d_qz, _, _, loglikelihood = self.model.loss(recon, p_x, r_x, trans_data, mu, log_sigma, z_category, z_smp, c_bin)
+                total_loss_val = loss.data.item()
+                total_dist_z = dist_z.data.item()
+                total_dist_qz = d_qz.data.item()
                 if self.ref_prior:
-                    predicted_label[0, i * self.batch_size:min((i + 1) * self.batch_size, max_len)] = np.argmax(c_p[data_idx, :], axis=1) + 1
+                    predicted_label[0, :] = np.argmax(c_p[data_idx, :], axis=1) + 1
 
                 for arm in range(self.n_arm):
-                    total_loss_rec[arm].append(loss_arms[arm].data.item())
-                    total_loglikelihood[arm].append(loglikelihood[arm].data.item())
+                    total_loss_rec[arm] = loss_arms[arm].data.item()
+                    total_loglikelihood[arm] = loglikelihood[arm].data.item()
 
                 for arm in range(self.n_arm):
-                    state_sample[arm, i * self.batch_size:min((i + 1) * self.batch_size, max_len), :] = state[arm].cpu().detach().numpy()
-                    state_mu[arm, i * self.batch_size:min((i + 1) * self.batch_size, max_len), :] = mu[arm].cpu().detach().numpy()
-                    state_var[arm, i * self.batch_size:min((i + 1) * self.batch_size, max_len), :] = log_sigma[arm].cpu().detach().numpy()
+                    state_sample[arm, :, :] = state[arm].cpu().detach().numpy()
+                    state_mu[arm, :, :] = mu[arm].cpu().detach().numpy()
+                    state_var[arm, :, :] = log_sigma[arm].cpu().detach().numpy()
                     z_encoder = z_category[arm].cpu().data.view(z_category[arm].size()[0], self.n_categories).detach().numpy()
-                    z_prob[arm, i * self.batch_size:min((i + 1) * self.batch_size, max_len), :] = z_encoder
+                    z_prob[arm, :, :] = z_encoder
                     z_samp = z_smp[arm].cpu().data.view(z_smp[arm].size()[0], self.n_categories).detach().numpy()
-                    z_sample[arm, i * self.batch_size:min((i + 1) * self.batch_size, max_len), :] = z_samp
-                    data_low[arm,  i * self.batch_size:min((i + 1) * self.batch_size, max_len), :] = x_low[arm].detach().cpu().numpy()
+                    z_sample[arm, :, :] = z_samp
+                    data_low[arm, :, :] = x_low[arm].detach().cpu().numpy()
                     label = data_idx.numpy().astype(int)
-                    data_indx[i * batch_size:min((i + 1) * batch_size, max_len)] = label
-                    p_cell[arm, i * self.batch_size:min((i + 1) * self.batch_size, max_len), :] = p_x[arm].cpu().detach().numpy()
-                    recon_cell[arm, i * self.batch_size:min((i + 1) * self.batch_size, max_len), :] = recon[arm].cpu().detach().numpy()
+                    data_indx = label
+                    recon_cell[arm, :, :] = recon[arm].cpu().detach().numpy()
 
                     for n in range(z_encoder.shape[0]):
-                        state_cat[arm, i * self.batch_size + n] = np.argmax(z_encoder[n, :]) + 1
-                        prob_cat[arm, i * self.batch_size + n] = np.max(z_encoder[n, :])
+                        state_cat[arm, n] = np.argmax(z_encoder[n, :]) + 1
+                        prob_cat[arm, n] = np.max(z_encoder[n, :])
 
                     if self.ref_prior:
-                        predicted_label[arm+1, i * self.batch_size:min((i + 1) * self.batch_size, max_len)] = np.argmax(z_encoder, axis=1) + 1
+                        predicted_label[arm+1, :] = np.argmax(z_encoder, axis=1) + 1
                     else:
-                        predicted_label[arm, i * self.batch_size:min((i + 1) * self.batch_size, max_len)] = np.argmax(z_encoder, axis=1) + 1
+                        predicted_label[arm, ] = np.argmax(z_encoder, axis=1) + 1
+
 
         mean_test_rec = np.zeros(self.n_arm)
         mean_total_loss_rec = np.zeros(self.n_arm)
@@ -703,7 +773,6 @@ class cpl_mixVAE:
         d_dict['z_prob'] = z_prob
         d_dict['z_sample'] = z_sample
         d_dict['x_low'] = data_low
-        d_dict['p_c'] = p_cell
         d_dict['recon_c'] = recon_cell
         d_dict['prune_indx'] = prune_indx
 
