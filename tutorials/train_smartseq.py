@@ -65,7 +65,7 @@ def main(n_categories, n_arm, state_dim, latent_dim, fc_dim, n_epoch, n_epoch_p,
         trained_model = ''
 
     data = load_data(datafile=data_file)
-    trainloader, testloader, allloader= get_loaders(dataset=data['log1p'], batch_size=batch_size)
+    trainloader, testloader, _, _, _= get_loaders(dataset=data['log1p'], batch_size=batch_size)
 
     cplMixVAE = cpl_mixVAE(saving_folder=saving_folder, device=device)
         
