@@ -89,7 +89,6 @@ def get_loaders(dataset, label=[], seed=None, batch_size=128, train_size=0.9):
             test_ind = np.concatenate(test_ind)
             train_set = dataset[train_ind, :]
             test_set = dataset[test_ind, :]
-            n_class = len(np.unique(label))
         else:
             tt_size = int(train_size * dataset.shape[0])
             train_set, test_set, train_ind, test_ind = data_gen(dataset, tt_size, seed)
@@ -109,4 +108,4 @@ def get_loaders(dataset, label=[], seed=None, batch_size=128, train_size=0.9):
         all_data = TensorDataset(data_set_troch, all_ind_torch)
         alldata_loader = DataLoader(all_data, batch_size=batch_size, shuffle=False, drop_last=False, pin_memory=True)
 
-        return train_loader, test_loader, alldata_loader
+        return train_loader, test_loader, alldata_loader, train_ind, test_ind
