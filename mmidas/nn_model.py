@@ -48,7 +48,7 @@ class mixVAE_model(nn.Module):
             beta: regularizer for the KL divergence term.
             hard: a boolean variable, True uses one-hot method that is used in Gumbel-softmax, and False uses the Gumbel-softmax function.
             variational: a boolean variable for variational mode, False mode does not use sampling.
-            device: int value indicates the gpu device. Do not define it if you train the model on cpu).
+            device: computing device, either 'cpu' or 'cuda'.
             eps: a small constant value to fix computation overflow.
             momentum: a hyperparameter for batch normalization that updates its running statistics.
             ref_prior: a boolean variable, True uses the reference prior for the categorical variable.
@@ -70,12 +70,7 @@ class mixVAE_model(nn.Module):
         self.eps = eps
         self.ref_prior = ref_prior
         self.momentum = momentum
-
-        if device is None:
-            self.gpu = False
-        else:
-            self.gpu = True
-            self.device = device
+        self.device = device
 
         self.relu = nn.ReLU()
         self.lrelu = nn.LeakyReLU(0.1, inplace=True)
@@ -139,7 +134,7 @@ class mixVAE_model(nn.Module):
         return self.relu(self.fc11[arm](x)), self.sigmoid(self.fc11_p[arm](x)), self.sigmoid(self.fc11_r[arm](x))
 
 
-    def forward(self, x, temp, eval=False, mask=None):
+    def forward(self, x, temp, prior_c=[], eval=False, mask=None):
         """
         input args
             x: a list including input batch tensors (batch size x number of features) for each arm.
@@ -171,9 +166,7 @@ class mixVAE_model(nn.Module):
 
             if mask is not None:
                 qc_tmp = F.softmax(log_qc[arm][:, mask] / self.tau, dim=-1)
-                qc[arm] = torch.zeros((log_qc[arm].size(0), log_qc[arm].size(1)))
-                if self.gpu:
-                    qc[arm] = qc[arm].cuda(self.device)
+                qc[arm] = torch.zeros((log_qc[arm].size(0), log_qc[arm].size(1))).to(self.device)
 
                 qc[arm][:, mask] = qc_tmp
             else:
@@ -186,7 +179,11 @@ class mixVAE_model(nn.Module):
             else:
                 c[arm] = self.gumbel_softmax(q_, 1, self.n_categories, temp, hard=self.hard)
 
-            y = torch.cat((x_low[arm], c[arm]), dim=1)
+            if self.ref_prior:
+                y = torch.cat((x_low[arm], prior_c), dim=1)
+            else:
+                y = torch.cat((x_low[arm], c[arm]), dim=1)
+
             if self.varitional:
                 mu[arm], var = self.intermed(y, arm)
                 log_var[arm] = (var + self.eps).log()
@@ -258,9 +255,7 @@ class mixVAE_model(nn.Module):
             a sample from Gaussian distribution N(mu, sigma^2*I).
         """
         std = log_sigma.exp().sqrt()
-        eps = Variable(torch.FloatTensor(std.size()).normal_())
-        if self.gpu:
-            eps = eps.cuda(self.device)
+        eps = torch.rand_like(std).to(self.device)
         return eps.mul(std).add(mu)
 
 
@@ -274,9 +269,8 @@ class mixVAE_model(nn.Module):
         return
             -(log(-log(U))) (tensor)
         """
-        U = torch.rand(shape)
-        if self.gpu:
-            U = U.cuda(self.device)
+        U = torch.rand(shape).to(self.device)
+
         return -Variable(torch.log(-torch.log(U + self.eps) + self.eps))
 
 
@@ -393,9 +387,6 @@ class mixVAE_model(nn.Module):
                 # distance between z_1 and z_2 i.e., ||z_1 - z_2||^2
                 # Euclidean distance
                 z_distance_rep.append((torch.norm((c[arm_a] - c[arm_b]), p=2, dim=1).pow(2)).mean())
-                # if self.c_var_inv[0].size(0) == log_qz[0].size(0):
-                #     z_distance.append((torch.norm((log_qz[0] * self.c_var_inv[0]) - (log_qz[1] * self.c_var_inv[1]), p=2, dim=1).pow(2)).mean())
-                # else:
                 z_distance.append((torch.norm((log_qz[0] * var_qz_inv[0]) - (log_qz[1] * var_qz_inv[1]), p=2, dim=1).pow(2)).mean())
 
             if self.ref_prior:

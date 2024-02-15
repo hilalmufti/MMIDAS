@@ -21,7 +21,7 @@ class cpl_mixVAE:
         input args:
             saving_folder: a string that indicates the folder to save the model(s) and file(s).
             aug_file: a string that indicates the file of the pre-trained augmenter.
-            device: device: computing device, either 'cpu' or 'cuda'. For 'cpu' mode, the device is None. For 'cuda' mode, the device is an integer.
+            device: computing device, either 'cpu' or 'cuda'.
             eps: a small constant value to fix computation overflow.
             save_flag: a boolean variable, if True, the model is saved.
         """
@@ -33,13 +33,16 @@ class cpl_mixVAE:
         self.device = device
 
         if device is None:
-            self.gpu = False
-            print('using CPU ...')
+            self.device = torch.device('cpu')
+            print('---> Computional node is not assigned, using CPU!')
         else:
-            self.gpu = True
-            torch.cuda.set_device(device)
-            gpu_device = torch.device('cuda:' + str(device))
-            print('using GPU ' + torch.cuda.get_device_name(torch.cuda.current_device()))
+            if device == 'cpu':
+                self.device = torch.device('cpu')
+                print('---> Using CPU!')
+            else:
+                self.device = torch.device(torch.cuda.current_device())
+                torch.cuda.set_device(self.device)
+                print('--->' + torch.cuda.get_device_name(torch.cuda.current_device()))
 
         if self.aug_file:
             self.aug_model = torch.load(self.aug_file)
@@ -50,70 +53,11 @@ class cpl_mixVAE:
                                 input_dim=self.aug_param['n_features'])
             # Load the trained augmenter weights
             self.netA.load_state_dict(self.aug_model['netA'])
-
-            if self.gpu:
-                self.netA = self.netA.cuda(self.device)
-
-    def data_gen(self, dataset, train_size):
-
-        test_size = dataset.shape[0] - train_size
-        train_cpm, test_cpm, train_ind, test_ind = train_test_split(dataset[:, self.index], np.arange(dataset.shape[0]),
-                                                                    train_size=train_size, test_size=test_size,
-                                                                    random_state=0)
-
-        return train_cpm, test_cpm, train_ind, test_ind
-
-    def getdata(self, dataset, label=[], index=[], batch_size=128, train_size=0.9):
-
-        self.batch_size = batch_size
-        kwargs = {'pin_memory': True, 'shuffle': True, 'batch_size': batch_size}  # 'num_workers': 1,
-
-        if len(index) > 0:
-            self.index = index
-        else:
-            self.index = np.arange(0, dataset.shape[1])
-
-        if len(label) > 0:
-            train_ind, val_ind, test_ind = [], [], []
-            for ll in np.unique(label):
-                indx = np.where(label == ll)[0]
-                tt_size = int(train_size * sum(label == ll))
-                _, _, train_subind, test_subind = self.data_gen(dataset[indx, :], tt_size)
-                train_ind.append(indx[train_subind])
-                test_ind.append(indx[test_subind])
-
-            train_ind = np.concatenate(train_ind)
-            test_ind = np.concatenate(test_ind)
-            train_set = dataset[train_ind, :]
-            test_set = dataset[test_ind, :]
-            self.n_class = len(np.unique(label))
-        else:
-            tt_size = int(train_size * dataset.shape[0])
-            train_set, test_set, train_ind, test_ind = self.data_gen(dataset, tt_size)
-
-        print(train_set.shape, test_set.shape)
-
-        train_set_torch = torch.FloatTensor(train_set)
-        train_ind_torch = torch.FloatTensor(train_ind)
-        train_data = TensorDataset(train_set_torch, train_ind_torch)
-        train_loader = DataLoader(train_data, drop_last=True, **kwargs)
-
-        test_set_torch = torch.FloatTensor(test_set)
-        test_ind_torch = torch.FloatTensor(test_ind)
-        test_data = TensorDataset(test_set_torch, test_ind_torch)
-        test_loader = DataLoader(test_data, drop_last=False, **kwargs)
-
-        data_set_troch = torch.FloatTensor(dataset)  # torch.FloatTensor(dataset[:, self.index])
-        all_ind_torch = torch.FloatTensor(range(dataset.shape[0]))
-        all_data = TensorDataset(data_set_troch, all_ind_torch)
-        alldata_loader = DataLoader(all_data, batch_size=batch_size, shuffle=False, drop_last=False, pin_memory=True)
-
-        return train_loader, test_loader, alldata_loader, train_ind, test_ind
+            self.netA = self.netA.to(self.device)
 
 
-
-    def init_model(self, n_categories, state_dim, input_dim, fc_dim=100, lowD_dim=5, x_drop=0.2, s_drop=0.2, lr=.001,
-                   lam=1, lam_pc=1, n_arm=2, temp=1., tau=0.01, beta=1., hard=False, variational=True, ref_prior=False,
+    def init_model(self, n_categories, state_dim, input_dim, fc_dim=100, lowD_dim=10, x_drop=0.5, s_drop=0.2, lr=.001,
+                   lam=1, lam_pc=1, n_arm=2, temp=1., tau=0.005, beta=1., hard=False, variational=True, ref_prior=False,
                    trained_model='', n_pr=0, momentum=.01):
         """
         Initialized the deep mixture model and its optimizer.
@@ -152,10 +96,9 @@ class cpl_mixVAE:
                                 lowD_dim=lowD_dim, x_drop=x_drop, s_drop=s_drop, n_arm=self.n_arm, lam=lam, lam_pc=lam_pc,
                                 tau=tau, beta=beta, hard=hard, variational=variational, device=self.device, eps=self.eps,
                                 ref_prior=ref_prior, momentum=momentum)
+        
+        self.model = self.model.to(self.device)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=lr)
-
-        if self.gpu:
-            self.model = self.model.cuda(self.device)
 
         if len(trained_model) > 0:
             print('Load the pre-trained model')
@@ -177,7 +120,7 @@ class cpl_mixVAE:
         self.current_time = time.strftime('%Y-%m-%d-%H-%M-%S')
 
 
-    def run(self, train_loader, test_loader, alldata_loader, n_epoch, n_epoch_p, c_p=0, min_con=.5, max_prun_it=0, mode='MSE'):
+    def train(self, train_loader, test_loader, n_epoch, n_epoch_p, c_p=0, c_onehot=0, min_con=.5, max_prun_it=0, mode='MSE'):
         """
         run the training of the cpl-mixVAE with the pre-defined parameters/settings
         pcikle used for saving the file
@@ -185,7 +128,6 @@ class cpl_mixVAE:
         input args
             train_loader: train dataloader.
             test_loader: test dataloader.
-            all_loader: all dataloader.
             n_epoch: number of training epoch, without pruning.
             n_epoch_p: number of training epoch, with pruning.
             c_p: the prior categorical variable, only if ref_prior is True.
@@ -217,15 +159,14 @@ class cpl_mixVAE:
         fc_sigma = torch.ones((self.state_dim, self.n_categories + self.lowD_dim))
         f6_mask = torch.ones((self.lowD_dim, self.state_dim + self.n_categories))
 
-        if self.gpu:
-            bias_mask = bias_mask.cuda(self.device)
-            weight_mask = weight_mask.cuda(self.device)
-            fc_mu = fc_mu.cuda(self.device)
-            fc_sigma = fc_sigma.cuda(self.device)
-            f6_mask = f6_mask.cuda(self.device)
+        bias_mask = bias_mask.to(self.device)
+        weight_mask = weight_mask.to(self.device)
+        fc_mu = fc_mu.to(self.device)
+        fc_sigma = fc_sigma.to(self.device)
+        f6_mask = f6_mask.to(self.device)
 
         if self.init:
-            print("Start training...")
+            print("Start training ...")
             for epoch in range(n_epoch):
                 train_loss_val = 0
                 train_jointloss_val = 0
@@ -239,10 +180,9 @@ class cpl_mixVAE:
                 self.model.train()
 
                 for batch_indx, (data, d_idx), in enumerate(train_loader):
-                    data = Variable(data)
+                    data = Variable(data).to(self.device)
                     d_idx = d_idx.to(int)
-                    if self.gpu:
-                        data = data.cuda(self.device)
+                        
                     trans_data = []
                     tt = time.time()
                     for arm in range(self.n_arm):
@@ -260,16 +200,16 @@ class cpl_mixVAE:
                             trans_data.append(data)
 
                     if self.ref_prior:
-                        prior_c = torch.FloatTensor(c_p[d_idx, :])
-                        if self.gpu:
-                            prior_c = prior_c.cuda(self.device)
+                        c_bin = torch.FloatTensor(c_onehot[d_idx, :]).to(self.device)
+                        prior_c = torch.FloatTensor(c_p[d_idx, :]).to(self.device)
                     else:
-                        prior_c = 0
+                        c_bin = 0.
+                        prior_c = 0.
 
                     self.optimizer.zero_grad()
-                    recon_batch, p_x, r_x, x_low, qc, s, c, mu, log_var, log_qc = self.model(x=trans_data, temp=self.temp)
+                    recon_batch, p_x, r_x, x_low, qc, s, c, mu, log_var, log_qc = self.model(x=trans_data, temp=self.temp, prior_c=prior_c)
                     loss, loss_rec, loss_joint, entropy, dist_c, d_qc, KLD_cont, min_var_0, loglikelihood = \
-                        self.model.loss(recon_batch, p_x, r_x, trans_data, mu, log_var, qc, c, prior_c, mode)
+                        self.model.loss(recon_batch, p_x, r_x, trans_data, mu, log_var, qc, c, c_bin, mode)
                     loss.backward()
                     self.optimizer.step()
                     train_loss_val += loss.data.item()
@@ -280,7 +220,7 @@ class cpl_mixVAE:
                     var_min += min_var_0.data.item()
 
                     for arm in range(self.n_arm):
-                        train_loss_rec[arm] += loss_rec[arm].data.item()
+                        train_loss_rec[arm] += loss_rec[arm].data.item() / self.input_dim
 
                 train_loss[epoch] = train_loss_val / (batch_indx + 1)
                 train_loss_joint[epoch] = train_jointloss_val / (batch_indx + 1)
@@ -305,25 +245,24 @@ class cpl_mixVAE:
                     val_loss_rec = 0.
                     val_loss = 0.
                     for batch_indx, (data_val, d_idx), in enumerate(test_loader):
+                        data_val = data_val.to(self.device)
                         d_idx = d_idx.to(int)
-                        if self.gpu:
-                            data_val = data_val.cuda(self.device)
                         trans_val_data = []
                         for arm in range(self.n_arm):
                            trans_val_data.append(data_val)
 
                         if self.ref_prior:
-                            prior_c = torch.FloatTensor(c_p[d_idx, :])
-                            if self.gpu:
-                                prior_c = prior_c.cuda(self.device)
+                            c_bin = torch.FloatTensor(c_onehot[d_idx, :]).to(self.device)
+                            prior_c = torch.FloatTensor(c_p[d_idx, :]).to(self.device)
                         else:
-                            prior_c = 0
+                            c_bin = 0.
+                            prior_c = 0.
 
-                        recon_batch, p_x, r_x, x_low, qc, s, c, mu, log_var, _ = self.model(x=trans_val_data, temp=self.temp, eval=True)
-                        loss, loss_rec, loss_joint, _, _, _, _, _, _ = self.model.loss(recon_batch, p_x, r_x, trans_val_data, mu, log_var, qc, c, prior_c, mode)
+                        recon_batch, p_x, r_x, x_low, qc, s, c, mu, log_var, _ = self.model(x=trans_val_data, temp=self.temp, prior_c=prior_c, eval=True)
+                        loss, loss_rec, loss_joint, _, _, _, _, _, _ = self.model.loss(recon_batch, p_x, r_x, trans_val_data, mu, log_var, qc, c, c_bin, mode)
                         val_loss += loss.data.item()
                         for arm in range(self.n_arm):
-                            val_loss_rec += loss_rec[arm].data.item()
+                            val_loss_rec += loss_rec[arm].data.item() / self.input_dim
 
                 validation_loss[epoch] = val_loss_rec / (batch_indx + 1) / self.n_arm
                 # total_val_loss[epoch] = val_loss / (batch_indx + 1)
@@ -348,22 +287,18 @@ class cpl_mixVAE:
                 ax.figure.savefig(self.folder + '/model/learning_curve_before_pruning_K_' + str(self.n_categories) + '_' + self.current_time + '.png')
                 plt.close("all")
 
-
-        ind = []
+        
         if n_epoch_p > 0:
+            # initialized pruning parameters of the layer of the discrete variable
+            bias = self.model.fcc[0].bias.detach().cpu().numpy()
+            pruning_mask = np.where(bias != 0.)[0]
+            prune_indx = np.where(bias == 0.)[0]
             stop_prune = False
-            if self.n_pr > 0:
-                # initialized pruning parameters of the layer of the discrete variable
-                bias = self.model.fcc[0].bias.detach().cpu().numpy()
-                pruning_mask = np.where(bias != 0.)[0]
-                prune_indx = np.where(bias == 0.)[0]
-                ind = np.where(bias == 0.)[0]
-
         else:
             stop_prune = True
 
         pr = self.n_pr
-
+        ind = []
         while not stop_prune:
             predicted_label = np.zeros((self.n_arm, len(train_loader.dataset)))
 
@@ -371,27 +306,24 @@ class cpl_mixVAE:
             self.model.eval()
             with torch.no_grad():
                 for i, (data, d_idx) in enumerate(train_loader):
-                    data = Variable(data)
+                    data = data.to(self.device)
                     d_idx = d_idx.to(int)
-                    if self.gpu:
-                        data = data.cuda(self.device)
-
                     trans_data = []
                     for arm in range(self.n_arm):
                         trans_data.append(data)
 
                     if self.ref_prior:
-                        prior_c = torch.FloatTensor(c_p[d_idx, :])
-                        if self.gpu:
-                            prior_c = prior_c.cuda(self.device)
+                        c_bin = torch.FloatTensor(c_onehot[d_idx, :]).to(self.device)
+                        prior_c = torch.FloatTensor(c_p[d_idx, :]).to(self.device)
                     else:
-                        prior_c = 0
+                        c_bin = 0.
+                        prior_c = 0.
 
-                    recon, p_x, r_x, x_low, z_category, state, z_smp, mu, log_sigma, _ = self.model(trans_data, self.temp, mask=pruning_mask, eval=True)
+                    recon, p_x, r_x, x_low, z_category, state, z_smp, mu, log_sigma, _ = self.model(trans_data, self.temp, prior_c, mask=pruning_mask, eval=True)
 
                     for arm in range(self.n_arm):
                         z_encoder = z_category[arm].cpu().data.view(z_category[arm].size()[0], self.n_categories).detach().numpy()
-                        predicted_label[arm, i * self.batch_size:min((i + 1) * self.batch_size, len(alldata_loader.dataset))] = np.argmax(z_encoder, axis=1)
+                        predicted_label[arm, i * self.batch_size:min((i + 1) * self.batch_size, len(test_loader.dataset))] = np.argmax(z_encoder, axis=1)
 
             c_agreement = []
             for arm_a in range(self.n_arm):
@@ -427,7 +359,7 @@ class cpl_mixVAE:
 
             c_agreement = np.mean(c_agreement, axis=0)
             agreement = c_agreement[pruning_mask]
-            if (np.min(agreement) <= min_con) and pr < max_pron_it:
+            if (np.min(agreement) <= min_con) and pr < max_prun_it:
                 if pr > 0:
                     ind_min = pruning_mask[np.argmin(agreement)]
                     ind_min = np.array([ind_min])
@@ -491,11 +423,8 @@ class cpl_mixVAE:
                     # training
                     for batch_indx, (data, d_idx), in enumerate(train_loader):
                         # for data in train_loader:
-                        data = Variable(data)
+                        data = Variable(data).to(self.device)
                         d_idx = d_idx.to(int)
-                        if self.gpu:
-                            data = data.cuda(self.device)
-
                         data_bin = 0. * data
                         data_bin[data > 0.] = 1.
                         trans_data = []
@@ -505,7 +434,7 @@ class cpl_mixVAE:
                         w_param, bias_param, activ_param = 0, 0, 0
                         for arm in range(self.n_arm-1):
                             if self.aug_file:
-                                noise = torch.randn(self.batch_size, self.aug_param['num_n'], device=self.device)
+                                noise = torch.randn(self.batch_size, self.aug_param['num_n']).to(self.device)
                                 _, gen_data = self.netA(data, noise, True, self.device)
                                 if self.aug_param['n_zim'] > 1:
                                     data_bin = 0. * data
@@ -518,16 +447,16 @@ class cpl_mixVAE:
                                 trans_data.append(data)
 
                         if self.ref_prior:
-                            prior_c = torch.FloatTensor(c_p[d_idx, :])
-                            if self.gpu:
-                                prior_c = prior_c.cuda(self.device)
+                            c_bin = torch.FloatTensor(c_onehot[d_idx, :]).to(self.device)
+                            prior_c = torch.FloatTensor(c_p[d_idx, :]).to(self.device)
                         else:
-                            prior_c = 0
+                            c_bin = 0.
+                            prior_c = 0.
 
                         self.optimizer.zero_grad()
-                        recon_batch, p_x, r_x, x_low, qz, s, z, mu, log_var, log_qz = self.model(trans_data, self.temp, mask=pruning_mask)
+                        recon_batch, p_x, r_x, x_low, qz, s, z, mu, log_var, log_qz = self.model(trans_data, self.temp, prior_c, mask=pruning_mask)
                         loss, loss_rec, loss_joint, entropy, dist_z, d_qz, KLD_cont, min_var_0, _ = self.model.loss(recon_batch, p_x, r_x,
-                                                                                        trans_data, mu, log_var, qz, z, prior_c, mode)
+                                                                                        trans_data, mu, log_var, qz, z, c_bin, mode)
 
                         loss.backward()
                         self.optimizer.step()
@@ -540,7 +469,7 @@ class cpl_mixVAE:
                         var_min += min_var_0.data.item()
 
                         for arm in range(self.n_arm):
-                            train_loss_rec[arm] += loss_rec[arm].data.item()
+                            train_loss_rec[arm] += loss_rec[arm].data.item() / self.input_dim
 
                     train_loss[epoch] = train_loss_val / (batch_indx + 1)
                     train_loss_joint[epoch] = train_jointloss_val / (batch_indx + 1)
@@ -578,19 +507,19 @@ class cpl_mixVAE:
                                 trans_val_data.append(data_val)
 
                             if self.ref_prior:
-                                prior_c = torch.FloatTensor(c_p[d_idx, :])
-                                if self.gpu:
-                                    prior_c = prior_c.cuda(self.device)
+                                c_bin = torch.FloatTensor(c_onehot[d_idx, :]).to(self.device)
+                                prior_c = torch.FloatTensor(c_p[d_idx, :]).to(self.device)
                             else:
-                                prior_c = 0
+                                c_bin = 0.
+                                prior_c = 0.
 
-                            recon_batch, p_x, r_x, x_low, qc, s, c, mu, log_var, _ = self.model(x=trans_val_data, temp=self.temp,
+                            recon_batch, p_x, r_x, x_low, qc, s, c, mu, log_var, _ = self.model(x=trans_val_data, temp=self.temp, prior_c=prior_c,
                                                                                       eval=True, mask=pruning_mask)
                             loss, loss_rec, loss_joint, _, _, _, _, _, _ = self.model.loss(recon_batch, p_x, r_x, trans_val_data,
-                                                                                           mu, log_var, qc, c, prior_c, mode)
+                                                                                           mu, log_var, qc, c, c_bin, mode)
                             val_loss += loss.data.item()
                             for arm in range(self.n_arm):
-                                val_loss_rec += loss_rec[arm].data.item()
+                                val_loss_rec += loss_rec[arm].data.item() / self.input_dim
 
                     validation_loss[epoch] = val_loss_rec / (batch_indx + 1) / self.n_arm
                     total_val_loss[epoch] = val_loss / (batch_indx + 1)
@@ -620,105 +549,8 @@ class cpl_mixVAE:
                     self.n_categories) + '_' + self.current_time + '.png')
                 plt.close("all")
                 pr += 1
-
-        # Evaluate the trained model
-        bias = self.model.fcc[0].bias.detach().cpu().numpy()
-        pruning_mask = np.where(bias != 0.)[0]
-        prune_indx = np.where(bias == 0.)[0]
-        max_len = len(alldata_loader.dataset)
-        state_sample = np.zeros((self.n_arm, len(alldata_loader.dataset), self.state_dim))
-        state_mu = np.zeros((self.n_arm, len(alldata_loader.dataset), self.state_dim))
-        state_var = np.zeros((self.n_arm, len(alldata_loader.dataset), self.state_dim))
-        z_prob = np.zeros((self.n_arm, len(alldata_loader.dataset), self.n_categories))
-        z_sample = np.zeros((self.n_arm, len(alldata_loader.dataset), self.n_categories))
-        state_cat = np.zeros([self.n_arm, len(alldata_loader.dataset)])
-        predicted_label = np.zeros((self.n_arm, len(alldata_loader.dataset)))
-        x_low_all = np.zeros((self.n_arm, len(alldata_loader.dataset), self.lowD_dim))
-        total_loss_val = []
-        total_dist_z = []
-        total_dist_qz = []
-        total_loss_rec = [[] for a in range(self.n_arm)]
-        total_loglikelihood = [[] for a in range(self.n_arm)]
-        self.model.eval()
-        with torch.no_grad():
-            for i, (data, d_idx) in enumerate(alldata_loader):
-                data = Variable(data)
-                d_idx = d_idx.to(int)
-                if self.gpu:
-                    data = data.cuda(self.device)
-
-                if self.ref_prior:
-                    prior_c = torch.FloatTensor(c_p[d_idx, :])
-                    if self.gpu:
-                        prior_c = prior_c.cuda(self.device)
-                else:
-                    prior_c = 0
-
-                trans_data = []
-                for arm in range(self.n_arm):
-                    trans_data.append(data)
-
-                recon, p_x, r_x, x_low, z_category, state, z_smp, mu, log_sigma, _ = self.model(trans_data, self.temp, eval=True, mask=pruning_mask)
-                loss, loss_arms, loss_joint, _, dist_z, d_qz, _, _, loglikelihood = self.model.loss(recon, p_x, r_x, trans_data, mu, log_sigma, z_category, z_smp, prior_c, mode)
-                total_loss_val.append(loss.data.item())
-                total_dist_z.append(dist_z.data.item())
-                total_dist_qz.append(d_qz.data.item())
-
-                for arm in range(self.n_arm):
-                    total_loss_rec[arm].append(loss_arms[arm].data.item())
-                    total_loglikelihood[arm].append(loglikelihood[arm].data.item())
-
-                for arm in range(self.n_arm):
-                    state_sample[arm, i * self.batch_size:min((i + 1) * self.batch_size, max_len), :] = state[arm].cpu().detach().numpy()
-                    state_mu[arm, i * self.batch_size:min((i + 1) * self.batch_size, max_len), :] = mu[arm].cpu().detach().numpy()
-                    state_var[arm, i * self.batch_size:min((i + 1) * self.batch_size, max_len), :] = log_sigma[arm].cpu().detach().numpy()
-                    z_encoder = z_category[arm].cpu().data.view(z_category[arm].size()[0], self.n_categories).detach().numpy()
-                    z_prob[arm, i * self.batch_size:min((i + 1) * self.batch_size, max_len), :] = z_encoder
-                    z_samp = z_smp[arm].cpu().data.view(z_smp[arm].size()[0], self.n_categories).detach().numpy()
-                    z_sample[arm, i * self.batch_size:min((i + 1) * self.batch_size, max_len), :] = z_samp
-                    x_low_all[arm, i * self.batch_size:min((i + 1) * self.batch_size, max_len), :] = x_low[arm].cpu().detach().numpy()
-                    l = [int(lab) for lab in d_idx.numpy()]
-
-                    for n in range(z_encoder.shape[0]):
-                        state_cat[arm, i * self.batch_size + n] = np.argmax(z_encoder[n, :]) + 1
-
-                    label_predict = []
-
-                    for d in range(len(l)):
-                        z_cat = np.squeeze(z_encoder[d, :])
-                        label_predict.append(np.argmax(z_cat) + 1)
-
-                    predicted_label[arm, i * self.batch_size:min((i + 1) * self.batch_size, max_len)] = np.array(label_predict)
-
-        mean_test_rec = np.zeros(self.n_arm)
-        mean_total_loss_rec = np.zeros(self.n_arm)
-        mean_total_loglikelihood = np.zeros(self.n_arm)
-
-        for arm in range(self.n_arm):
-            mean_total_loss_rec[arm] = np.mean(np.array(total_loss_rec[arm]))
-            mean_total_loglikelihood[arm] = np.mean(np.array(total_loglikelihood[arm]))
-        # save data
-        data_file_id = self.folder + '/model/data_' + self.current_time
-
-        if self.save:
-            self.save_file(data_file_id,
-                           state_sample=state_sample,
-                           state_mu=state_mu,
-                           state_var=state_var,
-                           train_loss=train_loss,
-                           validation_loss=validation_loss,
-                           total_loss_rec=mean_total_loss_rec,
-                           total_likelihood=mean_total_loglikelihood,
-                           total_dist_z=np.mean(np.array(total_dist_z)),
-                           total_dist_qz=np.mean(np.array(total_dist_qz)),
-                           mean_test_rec=mean_test_rec,
-                           predicted_label=predicted_label,
-                           z_prob=z_prob,
-                           z_sample=z_sample,
-                           lowD_rep=x_low_all,
-                           prune_indx=prune_indx)
-
-        return data_file_id
+    
+        return trained_model
 
 
     def eval_model(self, data_mat, c_p=[], batch_size=1000, mode='MSE'):
@@ -772,17 +604,15 @@ class cpl_mixVAE:
         self.model.eval()
         with torch.no_grad():
             for i, (data, data_idx) in enumerate(data_loader):
-                data = Variable(data)
+                data = data.to(self.device)
                 data_idx = data_idx.to(int)
-                if self.gpu:
-                    data = data.cuda(self.device)
-
+                
                 if self.ref_prior:
-                    prior_c = torch.FloatTensor(c_p[data_idx, :])
-                    if self.gpu:
-                        prior_c = prior_c.cuda(self.device)
+                    # c_bin = torch.FloatTensor(c_onehot[data_idx, :]).to(self.device)
+                    prior_c = torch.FloatTensor(c_p[data_idx, :]).to(self.device)
                 else:
-                    prior_c = 0
+                    c_bin = 0.
+                    prior_c = 0.
 
                 trans_data = []
                 for arm in range(self.n_arm):
