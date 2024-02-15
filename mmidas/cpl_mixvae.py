@@ -164,6 +164,7 @@ class cpl_mixVAE:
         fc_mu = fc_mu.to(self.device)
         fc_sigma = fc_sigma.to(self.device)
         f6_mask = f6_mask.to(self.device)
+        self.batch_size = train_loader.batch_size
 
         if self.init:
             print("Start training ...")
