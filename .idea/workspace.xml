@@ -1,7 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="c3a652f1-ea32-4c4e-94bf-d921d3995b3a" name="Default Changelist" comment="" />
+    <list default="true" id="c3a652f1-ea32-4c4e-94bf-d921d3995b3a" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/MMIDAS.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/MMIDAS.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mmidas/augmentation/udagan.py" beforeDir="false" afterPath="$PROJECT_DIR$/mmidas/augmentation/udagan.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mmidas/cpl_mixvae.py" beforeDir="false" afterPath="$PROJECT_DIR$/mmidas/cpl_mixvae.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mmidas/utils/tools.py" beforeDir="false" afterPath="$PROJECT_DIR$/mmidas/utils/tools.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/notebooks/post_analysis_models.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/notebooks/smartseq_data_prep.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/pyproject.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tutorials/train_mixtureVAE/train_smartseq.py" beforeDir="false" afterPath="$PROJECT_DIR$/tutorials/train_mixtureVAE/train_smartseq.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -19,6 +30,35 @@
   <component name="PropertiesComponent">
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+  </component>
+  <component name="RunManager">
+    <configuration name="train_smartseq" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="MMIDAS" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tutorials/train_mixtureVAE" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/tutorials/train_mixtureVAE/train_smartseq.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.train_smartseq" />
+      </list>
+    </recent_temporary>
   </component>
   <component name="SvnConfiguration">
     <configuration />
@@ -32,5 +72,63 @@
       <updated>1692792299889</updated>
     </task>
     <servers />
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="684" y="318" key="FileChooserDialogImpl" timestamp="1707961293918">
+      <screen x="0" y="0" width="1792" height="1120" />
+    </state>
+    <state x="684" y="318" key="FileChooserDialogImpl/-46.-1175.1920.1175/0.0.1792.1120@0.0.1792.1120" timestamp="1707961293918" />
+    <state width="1771" height="382" key="GridCell.Tab.0.bottom" timestamp="1707962731548">
+      <screen x="0" y="0" width="1792" height="1120" />
+    </state>
+    <state width="1771" height="382" key="GridCell.Tab.0.bottom/-46.-1175.1920.1175/0.0.1792.1120@0.0.1792.1120" timestamp="1707962731548" />
+    <state width="1771" height="382" key="GridCell.Tab.0.center" timestamp="1707962731547">
+      <screen x="0" y="0" width="1792" height="1120" />
+    </state>
+    <state width="1771" height="382" key="GridCell.Tab.0.center/-46.-1175.1920.1175/0.0.1792.1120@0.0.1792.1120" timestamp="1707962731547" />
+    <state width="1771" height="382" key="GridCell.Tab.0.left" timestamp="1707962731547">
+      <screen x="0" y="0" width="1792" height="1120" />
+    </state>
+    <state width="1771" height="382" key="GridCell.Tab.0.left/-46.-1175.1920.1175/0.0.1792.1120@0.0.1792.1120" timestamp="1707962731547" />
+    <state width="1771" height="382" key="GridCell.Tab.0.right" timestamp="1707962731548">
+      <screen x="0" y="0" width="1792" height="1120" />
+    </state>
+    <state width="1771" height="382" key="GridCell.Tab.0.right/-46.-1175.1920.1175/0.0.1792.1120@0.0.1792.1120" timestamp="1707962731548" />
+    <state width="1771" height="382" key="GridCell.Tab.1.bottom" timestamp="1707962731549">
+      <screen x="0" y="0" width="1792" height="1120" />
+    </state>
+    <state width="1771" height="382" key="GridCell.Tab.1.bottom/-46.-1175.1920.1175/0.0.1792.1120@0.0.1792.1120" timestamp="1707962731549" />
+    <state width="1771" height="382" key="GridCell.Tab.1.center" timestamp="1707962731548">
+      <screen x="0" y="0" width="1792" height="1120" />
+    </state>
+    <state width="1771" height="382" key="GridCell.Tab.1.center/-46.-1175.1920.1175/0.0.1792.1120@0.0.1792.1120" timestamp="1707962731548" />
+    <state width="1771" height="382" key="GridCell.Tab.1.left" timestamp="1707962731548">
+      <screen x="0" y="0" width="1792" height="1120" />
+    </state>
+    <state width="1771" height="382" key="GridCell.Tab.1.left/-46.-1175.1920.1175/0.0.1792.1120@0.0.1792.1120" timestamp="1707962731548" />
+    <state width="1771" height="382" key="GridCell.Tab.1.right" timestamp="1707962731549">
+      <screen x="0" y="0" width="1792" height="1120" />
+    </state>
+    <state width="1771" height="382" key="GridCell.Tab.1.right/-46.-1175.1920.1175/0.0.1792.1120@0.0.1792.1120" timestamp="1707962731549" />
+    <state x="405" y="196" key="SettingsEditor" timestamp="1707961321852">
+      <screen x="0" y="0" width="1792" height="1120" />
+    </state>
+    <state x="405" y="196" key="SettingsEditor/-46.-1175.1920.1175/0.0.1792.1120@0.0.1792.1120" timestamp="1707961321852" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/mmidas/cpl_mixvae.py</url>
+          <line>289</line>
+          <option name="timeStamp" value="9" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/mmidas/cpl_mixvae.py</url>
+          <line>295</line>
+          <option name="timeStamp" value="11" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>
