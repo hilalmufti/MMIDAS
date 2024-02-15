@@ -58,7 +58,7 @@ class cpl_mixVAE:
 
     def init_model(self, n_categories, state_dim, input_dim, fc_dim=100, lowD_dim=10, x_drop=0.5, s_drop=0.2, lr=.001,
                    lam=1, lam_pc=1, n_arm=2, temp=1., tau=0.005, beta=1., hard=False, variational=True, ref_prior=False,
-                   trained_model='', n_pr=0, momentum=.01):
+                   trained_model='', n_pr=0, momentum=.01, mode='MSE'):
         """
         Initialized the deep mixture model and its optimizer.
 
@@ -81,8 +81,9 @@ class cpl_mixVAE:
             variational: a boolean variable for variational mode, False mode does not use sampling.
             ref_prior: a boolean variable, True uses the reference prior for the categorical variable.
             trained_model: a pre-trained model, in case you want to initialized the network with a pre-trained network.
-            n_pr: number of prunned categories, only if you want to initialize the network with a pre-trained network.
+            n_pr: number of pruned categories, only if you want to initialize the network with a pre-trained network.
             momentum: a hyperparameter for batch normalization that updates its running statistics.
+            mode: the loss function, either 'MSE' or 'ZINB'.
         """
         self.lowD_dim = lowD_dim
         self.n_categories = n_categories
@@ -95,7 +96,7 @@ class cpl_mixVAE:
         self.model = mixVAE_model(input_dim=self.input_dim, fc_dim=fc_dim, n_categories=self.n_categories, state_dim=self.state_dim,
                                 lowD_dim=lowD_dim, x_drop=x_drop, s_drop=s_drop, n_arm=self.n_arm, lam=lam, lam_pc=lam_pc,
                                 tau=tau, beta=beta, hard=hard, variational=variational, device=self.device, eps=self.eps,
-                                ref_prior=ref_prior, momentum=momentum)
+                                ref_prior=ref_prior, momentum=momentum, loss_mode=mode)
         
         self.model = self.model.to(self.device)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=lr)
@@ -120,7 +121,7 @@ class cpl_mixVAE:
         self.current_time = time.strftime('%Y-%m-%d-%H-%M-%S')
 
 
-    def train(self, train_loader, test_loader, n_epoch, n_epoch_p, c_p=0, c_onehot=0, min_con=.5, max_prun_it=0, mode='MSE'):
+    def train(self, train_loader, test_loader, n_epoch, n_epoch_p, c_p=0, c_onehot=0, min_con=.5, max_prun_it=0):
         """
         run the training of the cpl-mixVAE with the pre-defined parameters/settings
         pcikle used for saving the file
@@ -209,7 +210,7 @@ class cpl_mixVAE:
                     self.optimizer.zero_grad()
                     recon_batch, p_x, r_x, x_low, qc, s, c, mu, log_var, log_qc = self.model(x=trans_data, temp=self.temp, prior_c=prior_c)
                     loss, loss_rec, loss_joint, entropy, dist_c, d_qc, KLD_cont, min_var_0, loglikelihood = \
-                        self.model.loss(recon_batch, p_x, r_x, trans_data, mu, log_var, qc, c, c_bin, mode)
+                        self.model.loss(recon_batch, p_x, r_x, trans_data, mu, log_var, qc, c, c_bin)
                     loss.backward()
                     self.optimizer.step()
                     train_loss_val += loss.data.item()
@@ -259,7 +260,7 @@ class cpl_mixVAE:
                             prior_c = 0.
 
                         recon_batch, p_x, r_x, x_low, qc, s, c, mu, log_var, _ = self.model(x=trans_val_data, temp=self.temp, prior_c=prior_c, eval=True)
-                        loss, loss_rec, loss_joint, _, _, _, _, _, _ = self.model.loss(recon_batch, p_x, r_x, trans_val_data, mu, log_var, qc, c, c_bin, mode)
+                        loss, loss_rec, loss_joint, _, _, _, _, _, _ = self.model.loss(recon_batch, p_x, r_x, trans_val_data, mu, log_var, qc, c, c_bin)
                         val_loss += loss.data.item()
                         for arm in range(self.n_arm):
                             val_loss_rec += loss_rec[arm].data.item() / self.input_dim
@@ -456,7 +457,7 @@ class cpl_mixVAE:
                         self.optimizer.zero_grad()
                         recon_batch, p_x, r_x, x_low, qz, s, z, mu, log_var, log_qz = self.model(trans_data, self.temp, prior_c, mask=pruning_mask)
                         loss, loss_rec, loss_joint, entropy, dist_z, d_qz, KLD_cont, min_var_0, _ = self.model.loss(recon_batch, p_x, r_x,
-                                                                                        trans_data, mu, log_var, qz, z, c_bin, mode)
+                                                                                        trans_data, mu, log_var, qz, z, c_bin)
 
                         loss.backward()
                         self.optimizer.step()
@@ -511,7 +512,7 @@ class cpl_mixVAE:
                             recon_batch, p_x, r_x, x_low, qc, s, c, mu, log_var, _ = self.model(x=trans_val_data, temp=self.temp, prior_c=prior_c,
                                                                                       eval=True, mask=pruning_mask)
                             loss, loss_rec, loss_joint, _, _, _, _, _, _ = self.model.loss(recon_batch, p_x, r_x, trans_val_data,
-                                                                                           mu, log_var, qc, c, c_bin, mode)
+                                                                                           mu, log_var, qc, c, c_bin)
                             val_loss += loss.data.item()
                             for arm in range(self.n_arm):
                                 val_loss_rec += loss_rec[arm].data.item() / self.input_dim

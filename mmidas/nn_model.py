@@ -29,7 +29,7 @@ class mixVAE_model(nn.Module):
         loss: loss function module
     """
     def __init__(self, input_dim, fc_dim, n_categories, state_dim, lowD_dim, x_drop, s_drop, n_arm, lam, lam_pc,
-                 tau, beta, hard, variational, device, eps, momentum, ref_prior):
+                 tau, beta, hard, variational, device, eps, momentum, ref_prior, loss_mode):
         """
         Class instantiation.
 
@@ -52,6 +52,7 @@ class mixVAE_model(nn.Module):
             eps: a small constant value to fix computation overflow.
             momentum: a hyperparameter for batch normalization that updates its running statistics.
             ref_prior: a boolean variable, True uses the reference prior for the categorical variable.
+            loss_mode: string, define the reconstruction loss function, either MSE or ZINB.
         """
         super(mixVAE_model, self).__init__()
         self.input_dim = input_dim
@@ -71,6 +72,7 @@ class mixVAE_model(nn.Module):
         self.ref_prior = ref_prior
         self.momentum = momentum
         self.device = device
+        self.loss_mode = loss_mode
 
         self.relu = nn.ReLU()
         self.lrelu = nn.LeakyReLU(0.1, inplace=True)
@@ -92,8 +94,10 @@ class mixVAE_model(nn.Module):
         self.fc9 = mdl([nn.Linear(fc_dim, fc_dim) for i in range(n_arm)])
         self.fc10 = mdl([nn.Linear(fc_dim, fc_dim) for i in range(n_arm)])
         self.fc11 = mdl([nn.Linear(fc_dim, input_dim) for i in range(n_arm)])
-        self.fc11_p = mdl([nn.Linear(fc_dim, input_dim) for i in range(n_arm)])
-        self.fc11_r = mdl([nn.Linear(fc_dim, input_dim) for i in range(n_arm)])
+        if loss_mode == 'ZINB':
+            self.fc11_p = mdl([nn.Linear(fc_dim, input_dim) for i in range(n_arm)])
+            self.fc11_r = mdl([nn.Linear(fc_dim, input_dim) for i in range(n_arm)])
+
 
         self.batch_l1 = mdl([nn.BatchNorm1d(num_features=fc_dim, eps=eps, momentum=momentum, affine=False) for i in range(n_arm)])
         self.batch_l2 = mdl([nn.BatchNorm1d(num_features=fc_dim, eps=eps, momentum=momentum, affine=False) for i in range(n_arm)])
@@ -131,8 +135,17 @@ class mixVAE_model(nn.Module):
         x = self.relu(self.fc8[arm](x))
         x = self.relu(self.fc9[arm](x))
         x = self.relu(self.fc10[arm](x))
+        return self.relu(self.fc11[arm](x))
+    
+    def decoder_zinb(self, c, s, arm):
+        s = self.s_dp(s)
+        z = torch.cat((c, s), dim=1)
+        x = self.relu(self.fc6[arm](z))
+        x = self.relu(self.fc7[arm](x))
+        x = self.relu(self.fc8[arm](x))
+        x = self.relu(self.fc9[arm](x))
+        x = self.relu(self.fc10[arm](x))
         return self.relu(self.fc11[arm](x)), self.sigmoid(self.fc11_p[arm](x)), self.sigmoid(self.fc11_r[arm](x))
-
 
     def forward(self, x, temp, prior_c=[], eval=False, mask=None):
         """
@@ -193,8 +206,11 @@ class mixVAE_model(nn.Module):
                 log_var[arm] = 0. * mu[arm]
                 s[arm] = self.intermed(y, arm)
 
-            #recon_x[arm], p_x[arm] = self.decoder(c[arm], s[arm], arm)
-            recon_x[arm], zinb_pi[arm], zinb_r[arm] = self.decoder(c[arm], s[arm], arm)
+            
+            if self.loss_mode == 'ZINB':
+                recon_x[arm], zinb_pi[arm], zinb_r[arm] = self.decoder_zinb(c[arm], s[arm], arm)
+            else:
+                recon_x[arm] = self.decoder(c[arm], s[arm], arm)
 
         return recon_x, zinb_pi, zinb_r, x_low, qc, s, c, mu, log_var, log_qc
 
@@ -319,7 +335,7 @@ class mixVAE_model(nn.Module):
             y_hard = (y_hard - y).detach() + y
             return y_hard.view(-1, latent_dim * categorical_dim)
 
-    def loss(self, recon_x, p_x, r_x, x, mu, log_sigma, qc, c, prior_c=[], mode='MSE'):
+    def loss(self, recon_x, p_x, r_x, x, mu, log_sigma, qc, c, prior_c=[]):
         """
         loss function of the cpl-mixVAE network including.
 
@@ -330,7 +346,7 @@ class mixVAE_model(nn.Module):
             log_sigma: log of variance of the Gaussian distribution for the sate variable.
             qc: probability of categories for all arms.
             c: samples fom all distrubtions for all arms.
-            mode: string, define the reconstruction loss function, either MSE or ZINB
+            prior_c: prior probability of the categories for all arms, if ref_prior is True.
 
         return
             total_loss: total loss value.
@@ -355,12 +371,12 @@ class mixVAE_model(nn.Module):
 
         for arm_a in range(self.n_arm):
             loglikelihood[arm_a] = F.mse_loss(recon_x[arm_a], x[arm_a], reduction='mean') + x[arm_a].size(0) * np.log(2 * np.pi)
-            if mode == 'MSE':
+            if self.loss_mode == 'MSE':
                 l_rec[arm_a] = 0.5 * F.mse_loss(recon_x[arm_a], x[arm_a], reduction='sum') / (x[arm_a].size(0))
                 rec_bin = torch.where(recon_x[arm_a] > 0.1, 1., 0.)
                 x_bin = torch.where(x[arm_a] > 0.1, 1., 0.)
                 l_rec[arm_a] += 0.5 * F.binary_cross_entropy(rec_bin, x_bin)
-            elif mode == 'ZINB':
+            elif self.loss_mode == 'ZINB':
                 l_rec[arm_a] = zinb_loss(recon_x[arm_a], p_x[arm_a], r_x[arm_a], x[arm_a])
 
             if self.varitional:
@@ -409,7 +425,6 @@ class mixVAE_model(nn.Module):
         loss = scaler * sum(loss_indep) + loss_joint
 
         return loss, l_rec, loss_joint, sum(neg_joint_entropy) / n_comb, sum(z_distance) / n_comb, sum(z_distance_rep) / n_comb, KLD_cont, var_qz0.min(), loglikelihood
-
 
 
 def zinb_loss(rec_x, x_p, x_r, X, eps=1e-6):
