@@ -26,12 +26,6 @@ def summarize_inference(cpl_mixVAE, files, data, saving_folder=''):
     n_arm = cpl_mixVAE.n_arm
     n_categories = cpl_mixVAE.n_categories
 
-    data_set_torch = torch.FloatTensor(data['log1p'])
-    data_ind_torch = torch.FloatTensor(np.arange(len(data['cluster_id'])))
-    torch_data = TensorDataset(data_set_torch, data_ind_torch)
-    data_loader = DataLoader(torch_data, batch_size=1000, shuffle=True, drop_last=False, pin_memory=True)
-
-
     recon_loss = []
     label_pred = []
     test_dist_c = []
@@ -39,7 +33,6 @@ def summarize_inference(cpl_mixVAE, files, data, saving_folder=''):
     n_pruned = []
     consensus_min = []
     consensus_mean = []
-    cT_vs_cT = []
     test_loss = [[] for arm in range(n_arm)]
     prune_indx = []
     consensus = []
@@ -54,7 +47,7 @@ def summarize_inference(cpl_mixVAE, files, data, saving_folder=''):
         file_name_ind = file.rfind('/')
         print(f'Model {file[file_name_ind:]}')
         cpl_mixVAE.load_model(file)
-        output_dict = cpl_mixVAE.eval_model(data_loader)
+        output_dict = cpl_mixVAE.eval_model(data)
 
         x_low = output_dict['x_low']
         predicted_label = output_dict['predicted_label']
@@ -66,14 +59,8 @@ def summarize_inference(cpl_mixVAE, files, data, saving_folder=''):
         sample_id.append(output_dict['data_indx'])
         label_pred.append(predicted_label)
 
-        category_vs_class = np.zeros((n_arm, data['n_type'], n_categories))
-
         for arm in range(n_arm):
             test_loss[arm].append(output_dict['total_loss_rec'][arm])
-            label_predict = []
-            for d in range(len(data['cluster_id'])):
-                z_cat = np.squeeze(c_prob[arm][d, :])
-                category_vs_class[arm, int(data['cluster_id'][d] - 1), np.argmax(z_cat)] += 1
 
         if cpl_mixVAE.ref_prior:
             n_arm += 1
@@ -107,8 +94,8 @@ def summarize_inference(cpl_mixVAE, files, data, saving_folder=''):
                 consensus.append(armA_vs_armB_norm)
 
         n_pruned.append(len(nprune_indx))
-        category_vs_class = category_vs_class[:, :, nprune_indx]
-        cT_vs_cT.append(category_vs_class)
+        # category_vs_class = category_vs_class[:, :, nprune_indx]
+        # cT_vs_cT.append(category_vs_class)
         plt.close()
 
     data_dic = {}
@@ -119,7 +106,7 @@ def summarize_inference(cpl_mixVAE, files, data, saving_folder=''):
     data_dic['con_mean'] = consensus_mean
     data_dic['num_pruned'] = n_pruned
     data_dic['pred_label'] = label_pred
-    data_dic['cT_vs_cT'] = cT_vs_cT
+    # data_dic['cT_vs_cT'] = cT_vs_cT
     data_dic['consensus'] = consensus
     data_dic['armA_vs_armB'] = AvsB
     data_dic['prune_indx'] = prune_indx
