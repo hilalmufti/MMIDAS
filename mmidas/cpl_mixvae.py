@@ -245,12 +245,34 @@ class cpl_mixVAE:
                 with torch.no_grad():
                     val_loss_rec = 0.
                     val_loss = 0.
-                    for batch_indx, (data_val, d_idx), in enumerate(test_loader):
+                    if test_loader.batch_size > 1:
+                        for batch_indx, (data_val, d_idx), in enumerate(test_loader):
+                            data_val = data_val.to(self.device)
+                            d_idx = d_idx.to(int)
+                            trans_val_data = []
+                            for arm in range(self.n_arm):
+                               trans_val_data.append(data_val)
+
+                            if self.ref_prior:
+                                c_bin = torch.FloatTensor(c_onehot[d_idx, :]).to(self.device)
+                                prior_c = torch.FloatTensor(c_p[d_idx, :]).to(self.device)
+                            else:
+                                c_bin = 0.
+                                prior_c = 0.
+
+                            recon_batch, p_x, r_x, x_low, qc, s, c, mu, log_var, _ = self.model(x=trans_val_data, temp=self.temp, prior_c=prior_c, eval=True)
+                            loss, loss_rec, loss_joint, _, _, _, _, _, _ = self.model.loss(recon_batch, p_x, r_x, trans_val_data, mu, log_var, qc, c, c_bin)
+                            val_loss += loss.data.item()
+                            for arm in range(self.n_arm):
+                                val_loss_rec += loss_rec[arm].data.item() / self.input_dim
+                    else:
+                        batch_indx = 0
+                        data_val, d_idx = test_loader.dataset.tensors
                         data_val = data_val.to(self.device)
                         d_idx = d_idx.to(int)
                         trans_val_data = []
                         for arm in range(self.n_arm):
-                           trans_val_data.append(data_val)
+                            trans_val_data.append(data_val)
 
                         if self.ref_prior:
                             c_bin = torch.FloatTensor(c_onehot[d_idx, :]).to(self.device)
@@ -259,9 +281,13 @@ class cpl_mixVAE:
                             c_bin = 0.
                             prior_c = 0.
 
-                        recon_batch, p_x, r_x, x_low, qc, s, c, mu, log_var, _ = self.model(x=trans_val_data, temp=self.temp, prior_c=prior_c, eval=True)
-                        loss, loss_rec, loss_joint, _, _, _, _, _, _ = self.model.loss(recon_batch, p_x, r_x, trans_val_data, mu, log_var, qc, c, c_bin)
-                        val_loss += loss.data.item()
+                        recon_batch, p_x, r_x, x_low, qc, s, c, mu, log_var, _ = self.model(x=trans_val_data,
+                                                                                            temp=self.temp,
+                                                                                            prior_c=prior_c, eval=True)
+                        loss, loss_rec, loss_joint, _, _, _, _, _, _ = self.model.loss(recon_batch, p_x, r_x,
+                                                                                       trans_val_data, mu, log_var, qc,
+                                                                                       c, c_bin)
+                        val_loss = loss.data.item()
                         for arm in range(self.n_arm):
                             val_loss_rec += loss_rec[arm].data.item() / self.input_dim
 
