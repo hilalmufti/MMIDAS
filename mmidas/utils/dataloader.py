@@ -108,4 +108,4 @@ def get_loaders(dataset, label=[], seed=None, batch_size=128, train_size=0.9):
         all_data = TensorDataset(data_set_troch, all_ind_torch)
         alldata_loader = DataLoader(all_data, batch_size=batch_size, shuffle=False, drop_last=False, pin_memory=True)
 
-        return train_loader, test_loader, alldata_loader, train_ind, test_ind
+        return train_loader, test_loader, alldata_loader

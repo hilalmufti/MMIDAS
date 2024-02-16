@@ -6,7 +6,9 @@ import matplotlib.pyplot as plt
 from copy import deepcopy
 
 class Node():
-    '''Simple Node class. Each instance contains a list of children and parents.'''
+    '''
+        Simple Node class. Each instance contains a list of children and parents.
+    '''
 
     def __init__(self,name,C_list=[],P_list=[]):
         self.name=name
@@ -29,9 +31,11 @@ class Node():
         return [Node(n,C_list,P_list) for n in self.C_name_list]
 
 def get_valid_classifications(current_node_list,C_list,P_list,valid_classes):
-    '''Recursively generates all possible classifications that are valid, 
-    based on the hierarchical tree defined by `C_list` and `P_list` \n
-    `current_node_list` is a list of Node objects. It is initialized as a list with only the root Node.'''
+    '''
+        Recursively generates all possible classifications that are valid,
+        based on the hierarchical tree defined by `C_list` and `P_list` \n
+        `current_node_list` is a list of Node objects. It is initialized as a list with only the root Node.
+    '''
     
     current_node_list.sort(key=lambda x: x.name)
     valid_classes.append(sorted([node.name for node in current_node_list]))
@@ -47,10 +51,12 @@ def get_valid_classifications(current_node_list,C_list,P_list,valid_classes):
 
 
 class HTree():
-    '''Class to work with hierarchical tree .csv generated for the transcriptomic data.
-    `htree_file` is full path to a .csv. The original .csv was generated from dend.RData, 
-    processed with `dend_functions.R` and `dend_parents.R` (Ref. Rohan/Zizhen)'''
-    def __init__(self,htree_df=None,htree_file=None):
+    '''
+        Class to work with hierarchical tree .csv generated for the transcriptomic data.
+        `htree_file` is full path to a .csv. The original .csv was generated from dend.RData,
+        processed with `dend_functions.R` and `dend_parents.R` (Ref. Rohan/Zizhen)
+    '''
+    def __init__(self, htree_df=None, htree_file=None):
         
         #Load and rename columns from filename
         if htree_file is not None:
@@ -67,6 +73,7 @@ class HTree():
         htree_df['y'].values[htree_df['isleaf'].values] = 0.0
         htree_df['col'].fillna('#000000',inplace=True)
         htree_df['parent'].fillna('root',inplace=True)
+        htree_df['child'] = np.array([c.strip() for c in htree_df['child']])
 
         #Sorting for convenience
         htree_df = htree_df.sort_values(by=['y', 'x'], axis=0, ascending=[True, True]).copy(deep=True)
@@ -87,11 +94,30 @@ class HTree():
         for key in htree_df.columns:
             setattr(self, key, htree_df[key].values)
         return
+    
+    def get_marker(self, exclude=[]):
+
+        if len(exclude)==0:
+            subclass_list = ['L2/3', 'L4', 'L5', 'L6', 'IT', 'PT', 'NP', 'CT', 'VISp', 'ALM', 'Sst', 'Vip', 'Lamp5', 'Pvalb', 'Sncg', 'Serpinf1']
+        
+        t_clusters = self.child[self.isleaf]
+        marker_genes = []
+        for ttype in t_clusters:
+            indxs = [ch for ch in range(len(ttype)) if ttype[ch].find(' ')==0]
+            indxs  = np.array(indxs + [len(ttype)])
+            for i_idx in range(len(indxs)-1):
+                tmp_gene = ttype[indxs[i_idx]+1:indxs[i_idx+1]]
+                if tmp_gene not in subclass_list:
+                    marker_genes.append(tmp_gene)
+
+        return np.unique(marker_genes)
+
 
     def plot(self,figsize=(15,10),fontsize=10,skeletononly=True,
-             skeletoncol='#BBBBBB',skeletonalpha=1.0,ls='-',txtleafonly=True,
-             fig=None, ax=None, linewidth=1, save=False, path=[], n_node=0,
-             hline_nodes=[], n_c=[], cell_count=[0], add_marker=False):
+             skeletoncol='#BBBBBB',skeletonalpha=1.0, ls='-',txtleafonly=True,
+             fig=None, ax=None, linewidth=1, save=False, path=[], n_node=0, 
+             marker='s', marker_size=12, hline_nodes=[], n_c=[], cell_count=[0], 
+             add_marker=False, margin_y=0.001):
         if fig is None:
             fig = plt.figure(figsize=figsize)
             ax = plt.gca()
@@ -120,7 +146,7 @@ class HTree():
                 for i in np.flatnonzero(self.isleaf):
                     label = self.child[i]
                     plt.text(self.x[i], self.y[i], label,
-                            color=self.col[i],
+                            color='black',
                             horizontalalignment='center',
                             verticalalignment='top',
                             rotation=90,
@@ -128,12 +154,12 @@ class HTree():
 
         for parent in np.unique(self.parent):
             #Get position of the parent node:
-            p_ind = np.flatnonzero(self.child==parent)
+            p_ind = np.flatnonzero(self.child==parent).squeeze()
             if p_ind.size==0: #Enters here for any root node
-                p_ind = np.flatnonzero(self.parent==parent)
+                p_ind = np.flatnonzero(self.parent==parent).squeeze()
                 xp = self.x[p_ind]
                 yp = 1.1*np.max(self.y)
-            else:    
+            else:
                 xp = self.x[p_ind]
                 yp = self.y[p_ind]
 
@@ -145,54 +171,35 @@ class HTree():
             for c_ind in all_c_inds:
                 xc = self.x[c_ind]
                 yc = self.y[c_ind]
-                plt.plot([xc, xc], [yc, yp], color=skeletoncol,
-                         alpha=skeletonalpha,ls=ls, linewidth=linewidth)
-                plt.plot([xc, xp], [yp, yp], color=skeletoncol,
-                         alpha=skeletonalpha, ls=ls, linewidth=linewidth)
+                plt.plot([xc, xc], [yc, yp], color=skeletoncol, alpha=skeletonalpha, ls=ls, linewidth=linewidth)
+                plt.plot([xc, xp], [yp, yp], color=skeletoncol, alpha=skeletonalpha, ls=ls, linewidth=linewidth)
         if skeletononly==False:
             ax.axis('off')
             ax.set_xlim([np.min(self.x) - a, np.max(self.x) + a])
             ax.set_ylim([np.min(self.y), 1.1*np.max(self.y)])
             plt.tight_layout()
-        sc = [3.1, 3, 2.7]
+            
         if add_marker:
+            print('add marker')
             ax.axis('off')
             ax.set_xlim([np.min(self.x) - 1, np.max(self.x) + 1])
             ax.set_ylim([np.min(self.y), 1.1 * np.max(self.y)])
             for i, s in enumerate(self.child):
                 if i < n_node:
-                    ax.plot(self.x[i], self.y[i], 's', c=col[i], ms=12)
+                    if self.y[i] > 0:
+                        m_y = self.y[i] + margin_y*self.y[i]
+                    else:
+                        m_y = margin_y
+                    print(i, s, self.col[i])
+                    if isinstance(marker, list):
+                        ax.plot(self.x[i], m_y, marker[i], color=self.col[i], ms=marker_size)
+                    else:
+                        ax.plot(self.x[i], m_y, marker, color=self.col[i], ms=marker_size)
+        plt.tight_layout()
         if save:
-            # for ii in range(len(hline_nodes)):
-            #     ax.axhline(y=y_node[ii][0] + 0.1*y_node[ii][0], linewidth=1.5,
-            #                ls='--', color='black')
-            #     ax.text(0.01, sc[ii]*(y_node[ii][0] + 0.15*y_node[ii][0]),
-            #             'K = ' + str(n_c[ii]),
-            #             transform=ax.transAxes, fontsize=18,
-            #             verticalalignment='top')
             for spine in plt.gca().spines.values():
                 spine.set_visible(False)
             plt.savefig(path + '/subtree.png', dpi=600)
-
-            # fig = plt.figure(figsize=(15, 3))
-            # ax = plt.gca()
-            # ax.bar(range(len(cell_count)), -1*cell_count,
-            #         color=self.col)
-            # ax.set_ylabel('# Cells', fontsize=20)
-            # ax.set_xlim([-1, len(cell_count)+1])
-            # ax.set_xticks([])
-            # ax.set_yticks([])
-            # ax.spines['top'].set_visible(False)
-            # ax.spines['right'].set_visible(False)
-            # ax.spines['bottom'].set_visible(False)
-            # ax.spines['left'].set_visible(False)
-            # ax.text(np.argmax(cell_count)-2, -np.max(
-            #     cell_count) - 120, np.max(
-            #     cell_count), fontsize=16)
-            # # ax.text(np.argmin(cell_count)-1.5, 20,
-            # #         np.min(cell_count), fontsize=16)
-            # plt.tight_layout()
-            # plt.savefig(path + '/cell_count.png', dpi=600)
 
         return
     

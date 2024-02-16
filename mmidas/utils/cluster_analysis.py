@@ -143,15 +143,17 @@ def K_selection(data_dict, num_category, n_arm, thr=0.95):
         norm_aitchison_dist = norm_aitchison_dist / np.max(norm_aitchison_dist)
         recon_loss = []
         norm_recon = []
+        l_recon = []
 
         for a in range(n_arm):
             recon_loss.append(np.array(data_dict['recon_loss'][a]))
             # print(np.min(recon_loss[a]),  np.max(recon_loss[a]))
             tmp = recon_loss[a] - np.min(recon_loss[a])
             norm_recon.append(tmp / np.max(tmp))
-            # norm_recon.append(recon_loss[a])
+            l_recon.append(recon_loss[a])
 
         norm_recon_mean = np.mean(norm_recon, axis=0)
+        l_recon_mean = np.mean(l_recon, axis=0)
         neg_cons = 1 - np.mean(data_dict['con_mean'], axis=0)
         consensus = np.mean(data_dict['con_mean'], axis=0)
         mean_cost = (neg_cons + norm_recon_mean + norm_aitchison_dist) / 3 # cplmixVAE_data['d_qz']
@@ -163,15 +165,19 @@ def K_selection(data_dict, num_category, n_arm, thr=0.95):
             K = None
         else:
             plot_flag = True
-            ordered_rec = norm_recon_mean[indx]
+            ordered_rec = l_recon_mean[indx]
             ordered_cons = consensus[indx]
-            tmp_ind = np.where(ordered_cons > 0.95)[0]
-            for tt in range(len(tmp_ind)):
-                i = len(tmp_ind) - tt - 1
-                if (ordered_cons[tmp_ind[i]] > ordered_cons[tmp_ind[i]-1]) and (ordered_rec[tmp_ind[i]] < ordered_rec[tmp_ind[i]-1]):
-                    selected_idx = tmp_ind[i]  
-                    K = data_dict['num_pruned'][indx][selected_idx] 
-                    break
+            tmp_ind = np.where(ordered_cons > thr)[0]
+            max_changes_indx = np.where(np.diff(ordered_cons[tmp_ind]) == max(np.diff(ordered_cons[tmp_ind])))[0][0] + 1
+            selected_idx = max_changes_indx
+            K = data_dict['num_pruned'][indx][selected_idx] 
+            
+            # for tt in range(len(tmp_ind)):
+            #     i = len(tmp_ind) - tt - 1
+            #     if (ordered_cons[tmp_ind[i]] > ordered_cons[tmp_ind[i]-1]) and (ordered_rec[tmp_ind[i]] < ordered_rec[tmp_ind[i]-1]):
+            #         selected_idx = tmp_ind[i]  
+            #         K = data_dict['num_pruned'][indx][selected_idx] 
+            #         break
         
         fig = plt.figure(figsize=[10, 5])
         ax = fig.add_subplot()
@@ -181,19 +187,20 @@ def K_selection(data_dict, num_category, n_arm, thr=0.95):
         ax.set_xlabel('Categories', fontsize=14)
         ax.set_xticks(data_dict['num_pruned'][indx])
         ax.set_xticklabels(data_dict['num_pruned'][indx], fontsize=8, rotation=90)
+        y_max = np.max([np.max(data_dict['d_qc']), np.max(neg_cons)]) + 0.1
         if plot_flag:
-            ax.vlines(data_dict['num_pruned'][indx][selected_idx], 0, 1, colors='gray', linestyles='dotted')
+            ax.vlines(data_dict['num_pruned'][indx][selected_idx], 0, y_max, colors='gray', linestyles='dotted')
             ax.hlines(neg_cons[indx][selected_idx], min(data_dict['num_pruned']), max(data_dict['num_pruned']), colors='gray', linestyles='dotted')
         
         ax.legend(loc='upper right')
-        ax.set_ylim([0, 1])
+        ax.set_ylim([0, y_max])
         ax.grid(True)
         plt.show()
 
         if plot_flag:
             print(f"Selected number of clusters: {data_dict['num_pruned'][indx][selected_idx]} with consensus {consensus[indx][selected_idx]}")
 
-        return data_dict['num_pruned'][indx], norm_recon_mean[indx], consensus[indx], K
+        return data_dict['num_pruned'][indx], l_recon_mean[indx], consensus[indx], K
 
 
 
