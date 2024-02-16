@@ -94,8 +94,6 @@ def summarize_inference(cpl_mixVAE, files, data, saving_folder=''):
                 consensus.append(armA_vs_armB_norm)
 
         n_pruned.append(len(nprune_indx))
-        # category_vs_class = category_vs_class[:, :, nprune_indx]
-        # cT_vs_cT.append(category_vs_class)
         plt.close()
 
     data_dic = {}
@@ -106,7 +104,6 @@ def summarize_inference(cpl_mixVAE, files, data, saving_folder=''):
     data_dic['con_mean'] = consensus_mean
     data_dic['num_pruned'] = n_pruned
     data_dic['pred_label'] = label_pred
-    # data_dic['cT_vs_cT'] = cT_vs_cT
     data_dic['consensus'] = consensus
     data_dic['armA_vs_armB'] = AvsB
     data_dic['prune_indx'] = prune_indx
