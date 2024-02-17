@@ -55,7 +55,7 @@ pip install -e .
 ```
 
 ### Usage
-Work through the provided notebooks in the following sequential: 
+Work through the provided ```notebooks``` in the following sequential: 
 
 1. Data Preparation: Prepare the data file for training and testing (here for Mouse Smart-seq data)
 2. Training: Once the data is ready, train a MMIDAS model with 2 mixture variational arms.
