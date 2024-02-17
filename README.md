@@ -53,3 +53,12 @@ conda install pytorch==2.1.1 torchvision==0.16.1 torchaudio==2.1.1 pytorch-cuda=
 ```
 pip install -e .    
 ```
+
+### Usage
+Work through the provided notebooks in the following sequential: 
+
+1. Data Preparation: Prepare the data file for training and testing (here for Mouse Smart-seq data)
+2. Training: Once the data is ready, train a MMIDAS model with 2 mixture variational arms.
+3. Evaluation: Test the trained model(s) and identify categorical variables representing cell types using the proposed pruning approach in the simplex.
+4. Clusterability: Compare the accuracy and Silhouette score of identified clusters to the suggested t-type.
+5. State trvaersal analysis: Explore the role of genes in encoding the continuous variability inferred by the model.
