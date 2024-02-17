@@ -2,9 +2,9 @@ import torch
 import torch.optim as optim
 import matplotlib.pyplot as plt
 import time, os
-from utils.augmentation.udagan import *
-from utils.augmentation.dataloader import get_data
-from utils.augmentation.aug_utils import *
+from mmidas.augmentation.udagan import *
+from mmidas.augmentation.dataloader import get_data
+from mmidas.augmentation.aug_utils import *
 # from module.model_sprites import *
 
 eps = 1e-8

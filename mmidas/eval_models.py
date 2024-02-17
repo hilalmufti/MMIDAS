@@ -1,11 +1,6 @@
 import numpy as np
 import pickle
-import torch
-import seaborn as sns
 import matplotlib.pyplot as plt
-from sklearn.preprocessing import LabelEncoder, OneHotEncoder
-from scipy.special import softmax
-from torch.utils.data import DataLoader, TensorDataset
 
 
 def summarize_inference(cpl_mixVAE, files, data, saving_folder=''):

@@ -205,7 +205,6 @@ class mixVAE_model(nn.Module):
                 mu[arm] = self.intermed(y, arm)
                 log_var[arm] = 0. * mu[arm]
                 s[arm] = self.intermed(y, arm)
-
             
             if self.loss_mode == 'ZINB':
                 recon_x[arm], zinb_pi[arm], zinb_r[arm] = self.decoder_zinb(c[arm], s[arm], arm)

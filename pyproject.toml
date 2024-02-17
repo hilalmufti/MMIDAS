@@ -25,7 +25,7 @@ anndata_file = "Mouse_ALM-VISp_cpm.h5ad"
 htree_file = "tree_Mouse_ALM-VISp_2018.csv"
 ref_gene_file = "genes_SS_ALM-VISp.csv"
 aug_model = ""
-trained_model = ""
+trained_model = "run_1_K_120_Sdim_2_aug_True_lr_0.001_n_arm_2_nbatch_5000_nepoch_10000_nepochP_1000"
 
 # -----------------------------------------------------------------------------
 [10x_gaba_files]

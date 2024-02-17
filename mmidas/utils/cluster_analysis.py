@@ -1,13 +1,7 @@
-import scipy.io as sio
 import numpy as np
-import os, pickle, glob
 import seaborn as sns
-from sklearn import decomposition
-import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gs
-from scipy.optimize import linear_sum_assignment
-from sklearn.metrics.cluster import adjusted_rand_score, adjusted_mutual_info_score
 from sklearn.metrics import silhouette_samples, silhouette_score
 from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier
@@ -160,7 +154,7 @@ def K_selection(data_dict, num_category, n_arm, thr=0.95):
         
         # suggest the number of clusters
         if thr > max(consensus):
-            print("Privded minimum consensus is too high, please provide a lower value.")
+            print("Required minimum consensus is set too high, kindly consider specifying a lower value.")
             plot_flag = False
             K = None
         else:

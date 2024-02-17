@@ -2,21 +2,42 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="c3a652f1-ea32-4c4e-94bf-d921d3995b3a" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/MMIDAS.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/MMIDAS.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mmidas/augmentation/udagan.py" beforeDir="false" afterPath="$PROJECT_DIR$/mmidas/augmentation/udagan.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mmidas/cpl_mixvae.py" beforeDir="false" afterPath="$PROJECT_DIR$/mmidas/cpl_mixvae.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mmidas/utils/tools.py" beforeDir="false" afterPath="$PROJECT_DIR$/mmidas/utils/tools.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/post_analysis_models.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/smartseq_data_prep.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mmidas/utils/analysis_cells_tree.py" beforeDir="false" afterPath="$PROJECT_DIR$/mmidas/utils/analysis_cells_tree.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mmidas/utils/dataloader.py" beforeDir="false" afterPath="$PROJECT_DIR$/mmidas/utils/dataloader.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mmidas/utils/read_brainMap_data.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mmidas/utils/tree_based_analysis.py" beforeDir="false" afterPath="$PROJECT_DIR$/mmidas/utils/tree_based_analysis.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/notebooks/2_train.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/2_train.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/notebooks/3_evaluation.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/3_evaluation.ipynb" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/pyproject.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tutorials/train_mixtureVAE/train_smartseq.py" beforeDir="false" afterPath="$PROJECT_DIR$/tutorials/train_mixtureVAE/train_smartseq.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/run_1_K_120_Sdim_2_aug_False_lr_0.001_n_arm_2_nbatch_5000_train.ipynb_nepoch_10_nepochP_5/consensus_0_arm_0_arm_1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/run_1_K_120_Sdim_2_aug_False_lr_0.001_n_arm_2_nbatch_5000_train.ipynb_nepoch_10_nepochP_5/consensus_1_arm_0_arm_1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/run_1_K_120_Sdim_2_aug_False_lr_0.001_n_arm_2_nbatch_5000_train.ipynb_nepoch_10_nepochP_5/consensus_2_arm_0_arm_1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/run_1_K_120_Sdim_2_aug_False_lr_0.001_n_arm_2_nbatch_5000_train.ipynb_nepoch_10_nepochP_5/model/cpl_mixVAE_model_after_pruning_1_2024-02-14-18-14-04.pth" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/run_1_K_120_Sdim_2_aug_False_lr_0.001_n_arm_2_nbatch_5000_train.ipynb_nepoch_10_nepochP_5/model/cpl_mixVAE_model_after_pruning_1_2024-02-14-18-20-33.pth" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/run_1_K_120_Sdim_2_aug_False_lr_0.001_n_arm_2_nbatch_5000_train.ipynb_nepoch_10_nepochP_5/model/cpl_mixVAE_model_after_pruning_2_2024-02-14-18-14-04.pth" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/run_1_K_120_Sdim_2_aug_False_lr_0.001_n_arm_2_nbatch_5000_train.ipynb_nepoch_10_nepochP_5/model/cpl_mixVAE_model_after_pruning_2_2024-02-14-18-20-33.pth" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/run_1_K_120_Sdim_2_aug_False_lr_0.001_n_arm_2_nbatch_5000_train.ipynb_nepoch_10_nepochP_5/model/cpl_mixVAE_model_before_pruning_2024-02-14-18-14-04.pth" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/run_1_K_120_Sdim_2_aug_False_lr_0.001_n_arm_2_nbatch_5000_train.ipynb_nepoch_10_nepochP_5/model/cpl_mixVAE_model_before_pruning_2024-02-14-18-20-33.pth" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/run_1_K_120_Sdim_2_aug_False_lr_0.001_n_arm_2_nbatch_5000_train.ipynb_nepoch_10_nepochP_5/model/learning_curve_after_pruning_1_K_120_2024-02-14-18-14-04.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/run_1_K_120_Sdim_2_aug_False_lr_0.001_n_arm_2_nbatch_5000_train.ipynb_nepoch_10_nepochP_5/model/learning_curve_after_pruning_1_K_120_2024-02-14-18-20-33.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/run_1_K_120_Sdim_2_aug_False_lr_0.001_n_arm_2_nbatch_5000_train.ipynb_nepoch_10_nepochP_5/model/learning_curve_after_pruning_2_K_120_2024-02-14-18-14-04.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/run_1_K_120_Sdim_2_aug_False_lr_0.001_n_arm_2_nbatch_5000_train.ipynb_nepoch_10_nepochP_5/model/learning_curve_after_pruning_2_K_120_2024-02-14-18-20-33.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/run_1_K_120_Sdim_2_aug_False_lr_0.001_n_arm_2_nbatch_5000_train.ipynb_nepoch_10_nepochP_5/model/learning_curve_before_pruning_K_120_2024-02-14-18-14-04.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/run_1_K_120_Sdim_2_aug_False_lr_0.001_n_arm_2_nbatch_5000_train.ipynb_nepoch_10_nepochP_5/model/learning_curve_before_pruning_K_120_2024-02-14-18-20-33.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tutorials/train_smartseq.py" beforeDir="false" afterPath="$PROJECT_DIR$/tutorials/train_smartseq.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -32,7 +53,28 @@
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
-  <component name="RunManager">
+  <component name="RunManager" selected="Python.delet">
+    <configuration name="delet" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="MMIDAS" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/delet.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="train_smartseq" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="MMIDAS" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -56,6 +98,7 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.delet" />
         <item itemvalue="Python.train_smartseq" />
       </list>
     </recent_temporary>
@@ -78,38 +121,50 @@
       <screen x="0" y="0" width="1792" height="1120" />
     </state>
     <state x="684" y="318" key="FileChooserDialogImpl/-46.-1175.1920.1175/0.0.1792.1120@0.0.1792.1120" timestamp="1707961293918" />
-    <state width="1771" height="382" key="GridCell.Tab.0.bottom" timestamp="1707962731548">
+    <state width="1771" height="382" key="GridCell.Tab.0.bottom" timestamp="1708043773256">
       <screen x="0" y="0" width="1792" height="1120" />
     </state>
     <state width="1771" height="382" key="GridCell.Tab.0.bottom/-46.-1175.1920.1175/0.0.1792.1120@0.0.1792.1120" timestamp="1707962731548" />
-    <state width="1771" height="382" key="GridCell.Tab.0.center" timestamp="1707962731547">
+    <state width="1771" height="382" key="GridCell.Tab.0.bottom/0.0.1792.1120@0.0.1792.1120" timestamp="1708043773256" />
+    <state width="1771" height="382" key="GridCell.Tab.0.center" timestamp="1708043773256">
       <screen x="0" y="0" width="1792" height="1120" />
     </state>
     <state width="1771" height="382" key="GridCell.Tab.0.center/-46.-1175.1920.1175/0.0.1792.1120@0.0.1792.1120" timestamp="1707962731547" />
-    <state width="1771" height="382" key="GridCell.Tab.0.left" timestamp="1707962731547">
+    <state width="1771" height="382" key="GridCell.Tab.0.center/0.0.1792.1120@0.0.1792.1120" timestamp="1708043773256" />
+    <state width="1771" height="382" key="GridCell.Tab.0.left" timestamp="1708043773255">
       <screen x="0" y="0" width="1792" height="1120" />
     </state>
     <state width="1771" height="382" key="GridCell.Tab.0.left/-46.-1175.1920.1175/0.0.1792.1120@0.0.1792.1120" timestamp="1707962731547" />
-    <state width="1771" height="382" key="GridCell.Tab.0.right" timestamp="1707962731548">
+    <state width="1771" height="382" key="GridCell.Tab.0.left/0.0.1792.1120@0.0.1792.1120" timestamp="1708043773255" />
+    <state width="1771" height="382" key="GridCell.Tab.0.right" timestamp="1708043773256">
       <screen x="0" y="0" width="1792" height="1120" />
     </state>
     <state width="1771" height="382" key="GridCell.Tab.0.right/-46.-1175.1920.1175/0.0.1792.1120@0.0.1792.1120" timestamp="1707962731548" />
-    <state width="1771" height="382" key="GridCell.Tab.1.bottom" timestamp="1707962731549">
+    <state width="1771" height="382" key="GridCell.Tab.0.right/0.0.1792.1120@0.0.1792.1120" timestamp="1708043773256" />
+    <state width="1771" height="382" key="GridCell.Tab.1.bottom" timestamp="1708043773257">
       <screen x="0" y="0" width="1792" height="1120" />
     </state>
     <state width="1771" height="382" key="GridCell.Tab.1.bottom/-46.-1175.1920.1175/0.0.1792.1120@0.0.1792.1120" timestamp="1707962731549" />
-    <state width="1771" height="382" key="GridCell.Tab.1.center" timestamp="1707962731548">
+    <state width="1771" height="382" key="GridCell.Tab.1.bottom/0.0.1792.1120@0.0.1792.1120" timestamp="1708043773257" />
+    <state width="1771" height="382" key="GridCell.Tab.1.bottom/66.25.1726.1095@66.25.1726.1095" timestamp="1708041132464" />
+    <state width="1771" height="382" key="GridCell.Tab.1.center" timestamp="1708043773257">
       <screen x="0" y="0" width="1792" height="1120" />
     </state>
     <state width="1771" height="382" key="GridCell.Tab.1.center/-46.-1175.1920.1175/0.0.1792.1120@0.0.1792.1120" timestamp="1707962731548" />
-    <state width="1771" height="382" key="GridCell.Tab.1.left" timestamp="1707962731548">
+    <state width="1771" height="382" key="GridCell.Tab.1.center/0.0.1792.1120@0.0.1792.1120" timestamp="1708043773257" />
+    <state width="1771" height="382" key="GridCell.Tab.1.center/66.25.1726.1095@66.25.1726.1095" timestamp="1708041132463" />
+    <state width="1771" height="382" key="GridCell.Tab.1.left" timestamp="1708043773256">
       <screen x="0" y="0" width="1792" height="1120" />
     </state>
     <state width="1771" height="382" key="GridCell.Tab.1.left/-46.-1175.1920.1175/0.0.1792.1120@0.0.1792.1120" timestamp="1707962731548" />
-    <state width="1771" height="382" key="GridCell.Tab.1.right" timestamp="1707962731549">
+    <state width="1771" height="382" key="GridCell.Tab.1.left/0.0.1792.1120@0.0.1792.1120" timestamp="1708043773256" />
+    <state width="1771" height="382" key="GridCell.Tab.1.left/66.25.1726.1095@66.25.1726.1095" timestamp="1708041132463" />
+    <state width="1771" height="382" key="GridCell.Tab.1.right" timestamp="1708043773257">
       <screen x="0" y="0" width="1792" height="1120" />
     </state>
     <state width="1771" height="382" key="GridCell.Tab.1.right/-46.-1175.1920.1175/0.0.1792.1120@0.0.1792.1120" timestamp="1707962731549" />
+    <state width="1771" height="382" key="GridCell.Tab.1.right/0.0.1792.1120@0.0.1792.1120" timestamp="1708043773257" />
+    <state width="1771" height="382" key="GridCell.Tab.1.right/66.25.1726.1095@66.25.1726.1095" timestamp="1708041132464" />
     <state x="405" y="196" key="SettingsEditor" timestamp="1707961321852">
       <screen x="0" y="0" width="1792" height="1120" />
     </state>
@@ -120,13 +175,18 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/mmidas/cpl_mixvae.py</url>
-          <line>289</line>
+          <line>290</line>
           <option name="timeStamp" value="9" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/mmidas/cpl_mixvae.py</url>
-          <line>295</line>
+          <line>296</line>
           <option name="timeStamp" value="11" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/delet.py</url>
+          <line>47</line>
+          <option name="timeStamp" value="25" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
