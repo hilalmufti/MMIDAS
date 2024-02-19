@@ -414,7 +414,7 @@ class cpl_mixVAE:
 
             if not stop_prune:
                 print("Continue training with pruning ...")
-                print(f"Purned categories: {ind}")
+                print(f"Pruned categories: {ind}")
                 bias = bias_mask.detach().cpu().numpy()
                 pruning_mask = np.where(bias != 0.)[0]
                 train_loss = np.zeros(n_epoch_p)
