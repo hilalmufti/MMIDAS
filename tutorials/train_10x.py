@@ -1,5 +1,7 @@
 import argparse
 import os
+print(os.getcwd())
+from ..mmidas import utils
 from utils.training import train_cplmixVAE
 from utils.config import load_config
 from utils.dataloader import load_data

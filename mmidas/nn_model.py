@@ -4,6 +4,150 @@ from torch.nn import ModuleList as mdl
 import numpy as np
 from torch.autograd import Variable
 from torch.nn import functional as F
+from typing import NamedTuple
+
+# utils 
+
+def make_list(x, n): 
+    return [x for _ in range(n)]
+
+def size(x, dim=None):
+    return x.size(dim) if dim is not None else x.size()
+
+def bin(x):
+    return twhere(x > 0.1, 1.0, 0.0)
+
+def repeat(x, *ns): 
+    return x.repeat(*ns)
+
+def to(x, dst):
+  return x.to(dst)
+
+def view(x, *shape):
+  return x.view(*shape)
+
+def detach(x):
+    return x.detach()
+
+def is_available(x):
+    ...
+
+mse = F.mse_loss
+bce = F.binary_cross_entropy
+softmax = F.softmax
+t = torch
+tmean = t.mean
+tsum = t.sum
+tpow = t.pow
+texp = t.exp
+tlog = t.log
+tvar = t.var
+tsqrt = t.sqrt
+tnorm = t.norm
+trand = t.rand
+tzeros_like = t.zeros_like
+tscatter = t.scatter
+tmax = t.max
+tmin = t.min
+twhere = t.where
+tallclose = t.allclose
+
+# TODO:
+# [] pri = True
+# [] decrease number params
+def loss_fn(x, x_rec, x_succ, x_disp, s_mean, s_logvar, c_pdf, c_samp, c_prior, A, mode, is_var, beta, eps, C, lam, lam_pc, pri, device):
+    loss_indep, KLD_cont, log_qz, l_rec, var_qz_inv, loglikelihood = make_list(None, A), make_list(None, A), make_list(None, A), make_list(None, A), make_list(None, A), make_list(None, A)
+    _, n_cat = size(c_samp[0])
+    neg_joint_entropy, z_distance_rep, z_distance = [], [], []
+    # TODO: vectorize
+    for a in range(A):
+        loglikelihood[a] = mse(x_rec[a], x[a], reduction='mean') + size(x[a], 0) * np.log(2 * np.pi)
+        match mode: 
+            case 'MSE':
+                l_rec[a] = 0.5 * mse(x_rec[a], x[a], reduction='sum') / (size(x[a], 0))
+                l_rec[a] += 0.5 * bce(bin(x_rec[a]), bin(x[a]))
+            case 'ZINB':
+                l_rec[a] = zinb(x_rec[a], x_succ[a], x_disp[a], x[a])
+        if is_var:
+            KLD_cont[a] = tsum(-0.5 * tmean(1 + s_logvar[a] - tpow(s_mean[a], 2) - texp(s_logvar[a]), dim=0))
+            loss_indep[a] = l_rec[a] + beta * KLD_cont[a]
+        else: 
+            KLD_cont[a] = [0.0]
+            loss_indep[a] = l_rec[a]
+
+        
+        log_qz[0] = tlog(c_pdf[a] + eps)
+        var_qz0 = tvar(c_pdf[a], 0)
+        var_qz_inv[0] = tsqrt(repeat((1 / (var_qz0 + eps)), size(c_pdf[a], 0), 1))
+
+        for b in range(a + 1, A): 
+            log_qz[1] = tlog(c_pdf[b] + eps)
+            tmp_entropy = tmean(tsum(c_pdf[a] * log_qz[0], dim=-1)) + tmean(tsum(c_pdf[b] * log_qz[1], dim=-1))
+            neg_joint_entropy.append(tmp_entropy)
+            var_qz1 = tvar(c_pdf[b], 0)
+            var_qz_inv[1] = tsqrt(repeat((1 / (var_qz1 + eps)), size(c_pdf[b], 0), 1))
+            z_distance_rep.append(tmean(tpow(tnorm((c_samp[a] - c_samp[b]), p=2, dim=1), 2)))
+            z_distance.append(tmean(tpow(tnorm((log_qz[0] * var_qz_inv[0]) - (log_qz[1] * var_qz_inv[1]), p=2, dim=1), 2)))
+
+        if pri: 
+            n_comb = max(A * (A + 1) / 2, 1)
+            scaler = A
+            z_distance_rep.append(tmean(tpow(tnorm((c_samp[a] - c_prior), p=2, dim=1), 2)))
+            tmp_entropy = tmean(tsum(c_pdf[a] * log_qz[0], dim=-1))
+            neg_joint_entropy.append(tmp_entropy)
+            qc_bin = gsoftmax(c_pdf[a], eps, 1, 1, C, device, hard=True, noise=False)
+            z_distance.append(lam_pc * bce(qc_bin, c_prior))
+        else: 
+            n_comb = max(A * (A - 1) / 2, 1)
+            scaler = max((A - 1), 1)
+
+
+
+    loss_joint = lam * sum(z_distance) + sum(neg_joint_entropy) + n_comb * ((n_cat / 2) * (np.log(2 * np.pi)) - 0.5 * np.log(2 * lam))
+    loss = scaler * sum(loss_indep) + loss_joint
+
+    return loss, l_rec, loss_joint, sum(neg_joint_entropy) / n_comb, sum(z_distance) / n_comb, sum(z_distance_rep) / n_comb, KLD_cont, tmin(var_qz0), loglikelihood
+
+    return {
+        'total': loss,
+        'rec': l_rec,
+        'joint': loss_joint,
+        'var': tmin(var_qz0),
+        'll': loglikelihood,
+        'c_entp': sum(neg_joint_entropy) / n_comb,
+        'c_ddist': sum(z_distance_rep) / n_comb,
+        'c_dist': sum(z_distance) / n_comb,
+        's_kl': KLD_cont
+    }
+
+class mixVAEConfig(NamedTuple):
+    n_categories: int = 120
+    state_dim: int = 2
+    n_arm: int = 20 
+    temp: float = 1.0
+    tau: float = 0.005
+    beta: float = 0.01 
+    lam: float = 1.0
+    lam_pc: float = 1.0
+    latent_dim: int = 10
+    n_epoch: int = 10000
+    n_epoch_p: int = 10000
+    min_con: float = 0.99
+    max_prun_it: int = 50
+    ref_pc: bool = False
+    fc_dim: int = 100
+    batch_size: int = 5000
+    variational: bool = True
+    augmentation: bool = False
+    lr: float = 0.001
+    p_drop: float = 0.5
+    s_drop: float = 0.2
+    pretrained_model: bool = False 
+    n_pr: int = 0
+    loss_mode: str = 'MSE'
+    n_run: int = 1
+    hard: bool = False
+    device: str = 'cuda'
 
 
 class mixVAE_model(nn.Module):
@@ -54,7 +198,8 @@ class mixVAE_model(nn.Module):
             ref_prior: a boolean variable, True uses the reference prior for the categorical variable.
             loss_mode: string, define the reconstruction loss function, either MSE or ZINB.
         """
-        super(mixVAE_model, self).__init__()
+        #super(mixVAE_model, self).__init__()
+        super().__init__()
         self.input_dim = input_dim
         self.fc_dim = fc_dim
         self.state_dim = state_dim
@@ -147,7 +292,7 @@ class mixVAE_model(nn.Module):
         x = self.relu(self.fc10[arm](x))
         return self.relu(self.fc11[arm](x)), self.sigmoid(self.fc11_p[arm](x)), self.sigmoid(self.fc11_r[arm](x))
 
-    def forward(self, x, temp, prior_c=[], eval=False, mask=None):
+    def forward(self, x, temp, prior_c=[], eval=False, mask=None, ret_dct=False):
         """
         input args
             x: a list including input batch tensors (batch size x number of features) for each arm.
@@ -165,53 +310,74 @@ class mixVAE_model(nn.Module):
             log_var: list of log of variance of the state variable for all arms.
             log_qc: list of log-likelihood value of categorical variables in a batch for all arms.
         """
-        recon_x = [None] * self.n_arm
-        zinb_pi = [None] * self.n_arm
-        zinb_r = [None] * self.n_arm
-        p_x = [None] * self.n_arm
-        s, c = [None] * self.n_arm, [None] * self.n_arm
-        mu, log_var = [None] * self.n_arm, [None] * self.n_arm
-        qc, alr_qc = [None] * self.n_arm, [None] * self.n_arm
-        x_low, log_qc = [None] * self.n_arm, [None] * self.n_arm
+        if ret_dct:
+            return self._forward(x, temp, prior_c, eval, mask)
+        else: 
+            recon_x = [None] * self.n_arm
+            zinb_pi = [None] * self.n_arm
+            zinb_r = [None] * self.n_arm
+            p_x = [None] * self.n_arm
+            s, c = [None] * self.n_arm, [None] * self.n_arm
+            mu, log_var = [None] * self.n_arm, [None] * self.n_arm
+            qc, alr_qc = [None] * self.n_arm, [None] * self.n_arm
+            x_low, log_qc = [None] * self.n_arm, [None] * self.n_arm
 
-        for arm in range(self.n_arm):
-            x_low[arm], log_qc[arm] = self.encoder(x[arm], arm)
+            for arm in range(self.n_arm):
+                x_low[arm], log_qc[arm] = self.encoder(x[arm], arm)
 
-            if mask is not None:
-                qc_tmp = F.softmax(log_qc[arm][:, mask] / self.tau, dim=-1)
-                qc[arm] = torch.zeros((log_qc[arm].size(0), log_qc[arm].size(1))).to(self.device)
+                if mask is not None:
+                    qc_tmp = F.softmax(log_qc[arm][:, mask] / self.tau, dim=-1)
+                    qc[arm] = torch.zeros((log_qc[arm].size(0), log_qc[arm].size(1))).to(self.device)
 
-                qc[arm][:, mask] = qc_tmp
-            else:
-                qc[arm] = F.softmax(log_qc[arm] / self.tau, dim=-1)
+                    qc[arm][:, mask] = qc_tmp
+                else:
+                    qc[arm] = F.softmax(log_qc[arm] / self.tau, dim=-1)
 
-            q_ = qc[arm].view(log_qc[arm].size(0), 1, self.n_categories)
+                q_ = qc[arm].view(log_qc[arm].size(0), 1, self.n_categories)
 
-            if eval:
-                c[arm] = self.gumbel_softmax(q_, 1, self.n_categories, temp, hard=True, gumble_noise=False)
-            else:
-                c[arm] = self.gumbel_softmax(q_, 1, self.n_categories, temp, hard=self.hard)
+                if eval:
+                    c[arm] = self.gumbel_softmax(q_, 1, self.n_categories, temp, hard=True, gumble_noise=False)
+                else:
+                    c[arm] = self.gumbel_softmax(q_, 1, self.n_categories, temp, hard=self.hard)
 
-            if self.ref_prior:
-                y = torch.cat((x_low[arm], prior_c), dim=1)
-            else:
-                y = torch.cat((x_low[arm], c[arm]), dim=1)
+                if self.ref_prior:
+                    y = torch.cat((x_low[arm], prior_c), dim=1)
+                else:
+                    y = torch.cat((x_low[arm], c[arm]), dim=1)
 
-            if self.varitional:
-                mu[arm], var = self.intermed(y, arm)
-                log_var[arm] = (var + self.eps).log()
-                s[arm] = self.reparam_trick(mu[arm], log_var[arm])
-            else:
-                mu[arm] = self.intermed(y, arm)
-                log_var[arm] = 0. * mu[arm]
-                s[arm] = self.intermed(y, arm)
-            
-            if self.loss_mode == 'ZINB':
-                recon_x[arm], zinb_pi[arm], zinb_r[arm] = self.decoder_zinb(c[arm], s[arm], arm)
-            else:
-                recon_x[arm] = self.decoder(c[arm], s[arm], arm)
+                if self.varitional:
+                    mu[arm], var = self.intermed(y, arm)
+                    log_var[arm] = (var + self.eps).log()
+                    s[arm] = self.reparam_trick(mu[arm], log_var[arm])
+                else:
+                    mu[arm] = self.intermed(y, arm)
+                    log_var[arm] = 0. * mu[arm]
+                    s[arm] = self.intermed(y, arm)
+                
+                if self.loss_mode == 'ZINB':
+                    recon_x[arm], zinb_pi[arm], zinb_r[arm] = self.decoder_zinb(c[arm], s[arm], arm)
+                else:
+                    recon_x[arm] = self.decoder(c[arm], s[arm], arm)
 
-        return recon_x, zinb_pi, zinb_r, x_low, qc, s, c, mu, log_var, log_qc
+            # x_rec, x_succ, x_disp, x_low, c_pdf, s_samp, c_samp, s_mean, s_logvar, c_ll
+            return recon_x, zinb_pi, zinb_r, x_low, qc, s, c, mu, log_var, log_qc
+    
+    # TODO:
+    # [] fill in
+    def _forward(self, x, temp, prior_c=[], eval=False, mask=None, ret_dct=False): 
+        pred = {
+            'x_rec': None,
+            'x_succ': None,
+            'x_disp': None,
+            'x_low': None,
+            'c_pdf': None,
+            'c_samp': None,
+            'c_ll': None,
+            's_samp': None,
+            's_mean': None,
+            's_logvar': None,
+        }
+        return pred
 
 
     def state_changes(self, x, d_s, temp, n_samp=100):
@@ -333,7 +499,10 @@ class mixVAE_model(nn.Module):
             y_hard = y_hard.view(*shape)
             y_hard = (y_hard - y).detach() + y
             return y_hard.view(-1, latent_dim * categorical_dim)
+        
 
+    # TODO:
+    # [] remove from class
     def loss(self, recon_x, p_x, r_x, x, mu, log_sigma, qc, c, prior_c=[]):
         """
         loss function of the cpl-mixVAE network including.
@@ -377,7 +546,6 @@ class mixVAE_model(nn.Module):
                 l_rec[arm_a] += 0.5 * F.binary_cross_entropy(rec_bin, x_bin)
             elif self.loss_mode == 'ZINB':
                 l_rec[arm_a] = zinb_loss(recon_x[arm_a], p_x[arm_a], r_x[arm_a], x[arm_a])
-
             if self.varitional:
                 KLD_cont[arm_a] = (-0.5 * torch.mean(1 + log_sigma[arm_a] - mu[arm_a].pow(2) - log_sigma[arm_a].exp(), dim=0)).sum()
                 loss_indep[arm_a] = l_rec[arm_a] + self.beta * KLD_cont[arm_a]
@@ -385,15 +553,22 @@ class mixVAE_model(nn.Module):
                 loss_indep[arm_a] = l_rec[arm_a]
                 KLD_cont[arm_a] = [0.]
 
+
+            
+
             log_qz[0] = torch.log(qc[arm_a] + self.eps)
             var_qz0 = qc[arm_a].var(0)
-
             var_qz_inv[0] = (1 / (var_qz0 + self.eps)).repeat(qc[arm_a].size(0), 1).sqrt()
+            
 
             for arm_b in range(arm_a + 1, self.n_arm):
                 log_qz[1] = torch.log(qc[arm_b] + self.eps)
+
+                
                 tmp_entropy = (torch.sum(qc[arm_a] * log_qz[0], dim=-1)).mean() + \
                               (torch.sum(qc[arm_b] * log_qz[1], dim=-1)).mean()
+                
+                
                 neg_joint_entropy.append(tmp_entropy)
                 # var = qc[arm_b].var(0)
                 var_qz1 = qc[arm_b].var(0)
@@ -417,12 +592,10 @@ class mixVAE_model(nn.Module):
             else:
                 n_comb = max(self.n_arm * (self.n_arm - 1) / 2, 1)
                 scaler = max((self.n_arm - 1), 1)
-
-
+        
         loss_joint = self.lam * sum(z_distance) + sum(neg_joint_entropy) + n_comb * ((n_cat / 2) * (np.log(2 * np.pi)) - 0.5 * np.log(2 * self.lam))
 
         loss = scaler * sum(loss_indep) + loss_joint
-
         return loss, l_rec, loss_joint, sum(neg_joint_entropy) / n_comb, sum(z_distance) / n_comb, sum(z_distance_rep) / n_comb, KLD_cont, var_qz0.min(), loglikelihood
 
 
@@ -442,7 +615,6 @@ def zinb_loss(rec_x, x_p, x_r, X, eps=1e-6):
         l_zinb: log of loss value
     """
 
-    X_dim = X.size(-1)
     k = X.exp() - 1. #logp(count) -->  (count)
 
     # extracting r,p, and z from the concatenated vactor.
@@ -459,3 +631,30 @@ def zinb_loss(rec_x, x_p, x_r, X, eps=1e-6):
     l_zinb = (loss_zero_counts + loss_nonzero_counts).mean()
 
     return l_zinb
+
+zinb = zinb_loss
+
+def g_sample(shape, eps, device):
+    U = to(trand(shape), device)
+    return -tlog(-tlog(U + eps) + eps)
+
+def gsoftmax_sample(phi, eps, temp, device):
+    logits = tlog(phi + eps) + g_sample(size(phi), eps, device)
+    return softmax(logits / temp, dim=-1)
+
+def gsoftmax(phi, eps, temp, latent_dim, cat_dim, device, hard=False, noise=True):
+
+    # len, einsum, einops 
+
+    y = gsoftmax_sample(phi, eps, temp, device) if noise else phi
+    if hard:
+        shape = size(y)
+        _, ind = tmax(y, dim=-1)
+        y_hard = view(tzeros_like(y), -1, shape[-1])
+        y_hard.scatter_(1, view(ind, -1, 1), 1)
+        assert y_hard == tscatter(y_hard, 1, view(ind, -1, 1), 1)
+        y_hard = view(y_hard, *shape)
+        y_hard = detach(y_hard - y) + y
+        return view(y_hard, -1, latent_dim * cat_dim)
+    else:
+        return view(y, -1, latent_dim * cat_dim)

@@ -1,15 +1,16 @@
 import argparse
 import os
-import numpy as np
 from mmidas.cpl_mixvae import cpl_mixVAE
 from mmidas.utils.tools import get_paths
 from mmidas.utils.dataloader import load_data, get_loaders
+
+from torchinfo import summary
 
 # Define the arguments
 parser = argparse.ArgumentParser()
 parser.add_argument("--n_categories", default=120, type=int, help="(maximum) number of cell types")
 parser.add_argument("--state_dim", default=2, type=int, help="state variable dimension")
-parser.add_argument("--n_arm", default=2, type=int,  help="number of mixVAE arms for each modalities")
+parser.add_argument("--n_arm", default=40, type=int,  help="number of mixVAE arms for each modalities")
 parser.add_argument("--temp",  default=1, type=float, help="gumbel-softmax temperature")
 parser.add_argument("--tau",  default=.005, type=float, help="softmax temperature")
 parser.add_argument("--beta",  default=.01, type=float, help="KL regularization parameter")
@@ -36,9 +37,40 @@ parser.add_argument("--hard", default=False, type=bool, help="hard encoding")
 parser.add_argument("--device", default=None, type=int, help="computing device, either 'cpu' or 'cuda'.")
 
 
+def model_size(model): 
+    param_size = 0 
+    for param in model.parameters(): 
+        param_size += param.nelement() * param.element_size()
+    buffer_size = 0 
+    for buffer in model.buffers(): 
+        buffer_size += buffer.nelement() * buffer.element_size()
+    total_size = param_size + buffer_size
+    return total_size
+
+def convert(bytes): 
+    KB = 1024
+    MB = 1024 * KB
+    GB = 1024 * MB
+
+    if bytes < KB: 
+        return f'{bytes} B'
+    elif bytes < MB:
+        return f'{bytes / KB} KB'
+    elif bytes < GB:
+        return f'{bytes / MB} MB'
+    else:
+        return f'{bytes / GB} GB'
+    
+def free_gpu():
+    import torch
+    torch.cuda.empty_cache()
+    torch.cuda.ipc_collect()
+
 # Define the main function
 def main(n_categories, n_arm, state_dim, latent_dim, fc_dim, n_epoch, n_epoch_p, min_con, max_prun_it, batch_size, lam, lam_pc, loss_mode,
          p_drop, s_drop, lr, temp, n_run, device, hard, tau, variational, ref_pc, augmentation, pretrained_model, n_pr, beta):
+
+    # free_gpu()
 
     toml_file = 'pyproject.toml'
     sub_file = 'smartseq_files'
@@ -89,6 +121,10 @@ def main(n_categories, n_arm, state_dim, latent_dim, fc_dim, n_epoch, n_epoch_p,
                           trained_model=trained_model,
                           n_pr=n_pr,
                           mode=loss_mode)
+    
+    model = cplMixVAE.model
+
+    print(convert(model_size(model)))
 
     model_file = cplMixVAE.train(train_loader=trainloader,
                                 test_loader=testloader,

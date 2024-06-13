@@ -38,6 +38,7 @@ def summarize_inference(cpl_mixVAE, files, data, saving_folder=''):
     if not isinstance(files, list):
         files = [files]
 
+    print(files)
     for i, file in enumerate(files):
         file_name_ind = file.rfind('/')
         print(f'Model {file[file_name_ind:]}')
@@ -60,6 +61,7 @@ def summarize_inference(cpl_mixVAE, files, data, saving_folder=''):
         if cpl_mixVAE.ref_prior:
             n_arm += 1
 
+        
         for arm_a in range(n_arm):
             pred_a = predicted_label[arm_a, :]
             for arm_b in range(arm_a + 1, n_arm):

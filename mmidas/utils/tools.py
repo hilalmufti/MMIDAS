@@ -14,13 +14,15 @@ def get_paths(toml_file, sub_file='files', verbose=False):
         config: dict
     """
 
-    package_dir = Path().resolve().parents[1]
+    # package_dir = Path().resolve().parents[1]
+    package_dir = Path().resolve()
     config_file = package_dir / toml_file
     print(config_file)
 
     if not Path(config_file).is_file():
         print(f'Did not find project`s toml file: {config_file}')
 
+    # hi
     f = open(config_file, "r")
     config = toml.load(f)
     f.close()
