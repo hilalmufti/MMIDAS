@@ -78,7 +78,7 @@ def bsize(x):
   return x.batch_size
 
 def item(tensor): 
-  return tensor.item()
+  return tensor.item() if torch.is_tensor(tensor) else tensor
 
 def join(s, *args, **kwargs): 
     return s.join(*args, **kwargs)
@@ -272,7 +272,6 @@ class cpl_mixVAE:
         else:
             self.is_init = True
             self.n_pr = 0
-
 
     def load_model(self, trained_model):
         loaded_file = torch.load(trained_model, map_location='cpu')
@@ -1143,22 +1142,22 @@ class cpl_mixVAE:
     # [] check asserts
     # [] make ref_prior version work, too
     # [] pruning
+    # @torch.compile
     def _fsdp(self, model, train_loader, val_loader, epochs, n_epoch_p, opt, device, c_p=0, c_onehot=0, min_con=0.5, max_prun_it=0, rank=None, world_size=None, sampler=None):
         assert torch.cuda.is_available()
-        model = torch.compile(model).to(device)
         
         # initialized saving arrays
         losses = {
-            'total': np.zeros(epochs),
-            'rec': np.zeros((self.arms, epochs)),
-            'joint': np.zeros(epochs),
-            'var': np.zeros(epochs),
-            'c_entp': np.zeros(epochs),
-            'c_ddist': np.zeros(epochs),
-            'c_dist': np.zeros(epochs),
-            's_kl': np.zeros((self.arms, self.categories, epochs)),
-            'val_total': np.zeros(epochs),
-            'val_rec': np.zeros(epochs)
+            'total': torch.zeros(epochs).to(rank),
+            'rec': torch.zeros((self.arms, epochs)).to(rank),
+            'joint': torch.zeros(epochs).to(rank),
+            'var': torch.zeros(epochs).to(rank),
+            'c_entp': torch.zeros(epochs).to(rank),
+            'c_ddist': torch.zeros(epochs).to(rank),
+            'c_dist': torch.zeros(epochs).to(rank),
+            's_kl': torch.zeros((self.arms, self.categories, epochs)).to(rank)
+            # 'val_total': torch.zeros(epochs),
+            # 'val_rec': torch.zeros(epochs),
         }
 
         B = bsize(train_loader)
@@ -1168,7 +1167,7 @@ class cpl_mixVAE:
             model.train()
             _losses = {
                 'total': 0.0,
-                'rec': np.zeros(self.arms),
+                'rec': torch.zeros(self.arms),
                 'joint': 0.0,
                 'var': 0.0,
                 'c_entp': 0.0,
@@ -1176,19 +1175,19 @@ class cpl_mixVAE:
                 'c_dist': 0.0,
                 's_kl': 0.0
             }
-            _val = {
-                'total': 0.0,
-                'rec': 0.0
-            }
+            # _val = {
+            #     'total': 0.0,
+            #     'rec': 0.0
+            # }
             for i, (data, d), in enumerate(train_loader): # batch index, (data, data index)
-                data, d = to(data, device), to(d, int)
+                data, d = to(data, rank), to(d, int)
                     
                 # TODO: wtf is this
                 trans_data = []
                 for _ in range(self.arms):
                     if self.aug_file:
-                        noise = torch.randn(B, self.aug_param['num_n'], device=device)
-                        _, gen_data = self.netA(data, noise, True, device)
+                        noise = torch.randn(B, self.aug_param['num_n'], device=rank)
+                        _, gen_data = self.netA(data, noise, True, rank)
                         if self.aug_param['n_zim'] > 1:
                             data_bin = 0.0 * data
                             data_bin[data > self.eps] = 1.0
@@ -1200,8 +1199,8 @@ class cpl_mixVAE:
                         trans_data.append(data)
 
                 if self.ref_prior:
-                    c_bin = to(torch.FloatTensor(c_onehot[d, :]), device)
-                    prior_c = to(torch.FloatTensor(c_p[d, :]), device)
+                    c_bin = to(torch.FloatTensor(c_onehot[d, :]), rank)
+                    prior_c = to(torch.FloatTensor(c_p[d, :]), rank)
                 else:
                     c_bin = 0.0
                     prior_c = 0.0
@@ -1223,7 +1222,7 @@ class cpl_mixVAE:
                 _losses['c_dist'] += item(dist_c)
                 
             # validation
-            _val = self.val(val_loader, device)
+            # _val = self.val(val_loader, device)
 
             losses['total'][epoch] = _losses['total'] / (i + 1)
             for a in range(self.arms):
@@ -1233,8 +1232,8 @@ class cpl_mixVAE:
             losses['c_entp'][epoch] = _losses['c_entp'] / (i + 1)
             losses['c_ddist'][epoch] = _losses['c_ddist'] / (i + 1)
             losses['c_dist'][epoch] = _losses['c_dist'] / (i + 1)
-            losses['val_total'][epoch] = _val['total']
-            losses['val_rec'][epoch] = _val['rec']
+            # losses['val_total'][epoch] = _val['total']
+            # losses['val_rec'][epoch] = _val['rec']
             
             print(f" -- EPOCH {str(epoch)} -- ".center((EPOCH_WIDTH // 2) + 5, ' '))
             print(_label('Total Loss:'), _value(losses['total'][epoch]))
@@ -1243,16 +1242,18 @@ class cpl_mixVAE:
             print(_label('Joint Loss:'), _value(losses['joint'][epoch]))
             print(_label('Entropy:'), _value(losses['c_entp'][epoch]))
             print(_label('Distance:'), _value(losses['c_dist'][epoch]))
-            print(_label('Validation Loss:'), _value(losses['val_total'][epoch]))
-            print(_label('Validation Rec. Loss:'), _value(losses['val_rec'][epoch]))
+            # print(_label('Validation Loss:'), _value(losses['val_total'][epoch]))
+            # print(_label('Validation Rec. Loss:'), _value(losses['val_rec'][epoch]))
             pbar.set_postfix({'Total Loss': losses['total'][epoch],
                               'Rec_arm_1': losses['rec'][0][epoch],
                               'Rec_arm_2': losses['rec'][1][epoch],
                               'Joint Loss': losses['joint'][epoch],
                               'Entropy': losses['c_entp'][epoch],
                               'Distance': losses['c_dist'][epoch],
-                              'Validation Loss': losses['val_total'][epoch],
-                              'Validation Rec. Loss': losses['val_rec'][epoch]})
+                            #   'Validation Loss': losses['val_total'][epoch],
+                            #   'Validation Rec. Loss': losses['val_rec'][epoch]
+                              }
+                              )
         # ------------------- Pruning -------------------
 #         masks = {
 #             'bias': torch.ones(self.categories).to(device),

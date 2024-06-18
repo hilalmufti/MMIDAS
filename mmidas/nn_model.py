@@ -55,6 +55,7 @@ tallclose = t.allclose
 # TODO:
 # [] pri = True
 # [] decrease number params
+# @torch.compile
 def loss_fn(x, x_rec, x_succ, x_disp, s_mean, s_logvar, c_pdf, c_samp, c_prior, A, mode, is_var, beta, eps, C, lam, lam_pc, pri, device):
     loss_indep, KLD_cont, log_qz, l_rec, var_qz_inv, loglikelihood = make_list(None, A), make_list(None, A), make_list(None, A), make_list(None, A), make_list(None, A), make_list(None, A)
     _, n_cat = size(c_samp[0])
@@ -310,56 +311,67 @@ class mixVAE_model(nn.Module):
             log_var: list of log of variance of the state variable for all arms.
             log_qc: list of log-likelihood value of categorical variables in a batch for all arms.
         """
+        recon_x = [None] * self.n_arm
+        zinb_pi = [None] * self.n_arm
+        zinb_r = [None] * self.n_arm
+        p_x = [None] * self.n_arm
+        s, c = [None] * self.n_arm, [None] * self.n_arm
+        mu, log_var = [None] * self.n_arm, [None] * self.n_arm
+        qc, alr_qc = [None] * self.n_arm, [None] * self.n_arm
+        x_low, log_qc = [None] * self.n_arm, [None] * self.n_arm
+
+        for arm in range(self.n_arm):
+            x_low[arm], log_qc[arm] = self.encoder(x[arm], arm)
+
+            if mask is not None:
+                qc_tmp = F.softmax(log_qc[arm][:, mask] / self.tau, dim=-1)
+                qc[arm] = torch.zeros((log_qc[arm].size(0), log_qc[arm].size(1))).to(self.device)
+
+                qc[arm][:, mask] = qc_tmp
+            else:
+                qc[arm] = F.softmax(log_qc[arm] / self.tau, dim=-1)
+
+            q_ = qc[arm].view(log_qc[arm].size(0), 1, self.n_categories)
+
+            if eval:
+                c[arm] = self.gumbel_softmax(q_, 1, self.n_categories, temp, hard=True, gumble_noise=False)
+            else:
+                c[arm] = self.gumbel_softmax(q_, 1, self.n_categories, temp, hard=self.hard)
+
+            if self.ref_prior:
+                y = torch.cat((x_low[arm], prior_c), dim=1)
+            else:
+                y = torch.cat((x_low[arm], c[arm]), dim=1)
+
+            if self.varitional:
+                mu[arm], var = self.intermed(y, arm)
+                log_var[arm] = (var + self.eps).log()
+                s[arm] = self.reparam_trick(mu[arm], log_var[arm])
+            else:
+                mu[arm] = self.intermed(y, arm)
+                log_var[arm] = 0. * mu[arm]
+                s[arm] = self.intermed(y, arm)
+            
+            if self.loss_mode == 'ZINB':
+                recon_x[arm], zinb_pi[arm], zinb_r[arm] = self.decoder_zinb(c[arm], s[arm], arm)
+            else:
+                recon_x[arm] = self.decoder(c[arm], s[arm], arm)
+
+        # x_rec, x_succ, x_disp, x_low, c_pdf, s_samp, c_samp, s_mean, s_logvar, c_ll
         if ret_dct:
-            return self._forward(x, temp, prior_c, eval, mask)
-        else: 
-            recon_x = [None] * self.n_arm
-            zinb_pi = [None] * self.n_arm
-            zinb_r = [None] * self.n_arm
-            p_x = [None] * self.n_arm
-            s, c = [None] * self.n_arm, [None] * self.n_arm
-            mu, log_var = [None] * self.n_arm, [None] * self.n_arm
-            qc, alr_qc = [None] * self.n_arm, [None] * self.n_arm
-            x_low, log_qc = [None] * self.n_arm, [None] * self.n_arm
-
-            for arm in range(self.n_arm):
-                x_low[arm], log_qc[arm] = self.encoder(x[arm], arm)
-
-                if mask is not None:
-                    qc_tmp = F.softmax(log_qc[arm][:, mask] / self.tau, dim=-1)
-                    qc[arm] = torch.zeros((log_qc[arm].size(0), log_qc[arm].size(1))).to(self.device)
-
-                    qc[arm][:, mask] = qc_tmp
-                else:
-                    qc[arm] = F.softmax(log_qc[arm] / self.tau, dim=-1)
-
-                q_ = qc[arm].view(log_qc[arm].size(0), 1, self.n_categories)
-
-                if eval:
-                    c[arm] = self.gumbel_softmax(q_, 1, self.n_categories, temp, hard=True, gumble_noise=False)
-                else:
-                    c[arm] = self.gumbel_softmax(q_, 1, self.n_categories, temp, hard=self.hard)
-
-                if self.ref_prior:
-                    y = torch.cat((x_low[arm], prior_c), dim=1)
-                else:
-                    y = torch.cat((x_low[arm], c[arm]), dim=1)
-
-                if self.varitional:
-                    mu[arm], var = self.intermed(y, arm)
-                    log_var[arm] = (var + self.eps).log()
-                    s[arm] = self.reparam_trick(mu[arm], log_var[arm])
-                else:
-                    mu[arm] = self.intermed(y, arm)
-                    log_var[arm] = 0. * mu[arm]
-                    s[arm] = self.intermed(y, arm)
-                
-                if self.loss_mode == 'ZINB':
-                    recon_x[arm], zinb_pi[arm], zinb_r[arm] = self.decoder_zinb(c[arm], s[arm], arm)
-                else:
-                    recon_x[arm] = self.decoder(c[arm], s[arm], arm)
-
-            # x_rec, x_succ, x_disp, x_low, c_pdf, s_samp, c_samp, s_mean, s_logvar, c_ll
+            return {
+                'x_rec': recon_x,
+                'x_succ': zinb_pi,
+                'x_disp': zinb_r,
+                'x_low': x_low,
+                'c_pdf': qc,
+                'c_samp': c,
+                'c_ll': log_qc,
+                's_samp': s,
+                's_mean': mu,
+                's_logvar': log_var,
+            }
+        else:
             return recon_x, zinb_pi, zinb_r, x_low, qc, s, c, mu, log_var, log_qc
     
     # TODO:
@@ -466,6 +478,10 @@ class mixVAE_model(nn.Module):
         return
             Samples from a categorical distribution.
         """
+        print('phi: ', phi.device)
+        print('phi + eps: ', (phi + self.eps).device)
+        print('self device: ', self.device)
+        print('o: ', self.sample_gumbel(phi.size()).device)
         logits = (phi + self.eps).log() + self.sample_gumbel(phi.size())
         return F.softmax(logits / temperature, dim=-1)
 

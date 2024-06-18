@@ -1,10 +1,15 @@
 import argparse
 import os
+import sys 
+
+sys.path.append('/allen/programs/celltypes/workgroups/mousecelltypes/Hilal/MMIDAS') # TODO: fix this hack lmao
+# print(sys.path)
+
 from mmidas.cpl_mixvae import cpl_mixVAE
 from mmidas.utils.tools import get_paths
 from mmidas.utils.dataloader import load_data, get_loaders
 
-from torchinfo import summary
+import torch
 
 # Define the arguments
 parser = argparse.ArgumentParser()
@@ -34,7 +39,7 @@ parser.add_argument("--n_pr", default=0, type=int, help="number of pruned catego
 parser.add_argument("--loss_mode", default='MSE', type=str, help="loss mode, MSE or ZINB")
 parser.add_argument("--n_run", default=1, type=int, help="number of the experiment")
 parser.add_argument("--hard", default=False, type=bool, help="hard encoding")
-parser.add_argument("--device", default=None, type=int, help="computing device, either 'cpu' or 'cuda'.")
+parser.add_argument("--device", default='cuda', type=str, help="computing device, either 'cpu' or 'cuda'.")
 
 
 def model_size(model): 
@@ -101,7 +106,7 @@ def main(n_categories, n_arm, state_dim, latent_dim, fc_dim, n_epoch, n_epoch_p,
 
     cplMixVAE = cpl_mixVAE(saving_folder=saving_folder, device=device)
         
-    cplMixVAE.init_model(n_categories=n_categories,
+    cplMixVAE.init(categories=n_categories,
                           state_dim=state_dim,
                           input_dim=data['log1p'].shape[1],
                           fc_dim=fc_dim,
@@ -109,7 +114,7 @@ def main(n_categories, n_arm, state_dim, latent_dim, fc_dim, n_epoch, n_epoch_p,
                           x_drop=p_drop,
                           s_drop=s_drop,
                           lr=lr,
-                          n_arm=n_arm,
+                          arms=n_arm,
                           temp=temp,
                           hard=hard,
                           tau=tau,
@@ -122,18 +127,32 @@ def main(n_categories, n_arm, state_dim, latent_dim, fc_dim, n_epoch, n_epoch_p,
                           n_pr=n_pr,
                           mode=loss_mode)
     
-    model = cplMixVAE.model
+    # model = cplMixVAE.model
 
-    print(convert(model_size(model)))
+    # print(convert(model_size(model)))
 
-    model_file = cplMixVAE.train(train_loader=trainloader,
-                                test_loader=testloader,
-                                n_epoch=n_epoch,
-                                n_epoch_p=n_epoch_p,
-                                c_onehot=data['c_onehot'],
-                                c_p=data['c_p'],
-                                min_con=min_con,
-                                max_prun_it=max_prun_it)
+    # cplMixVAE.model = torch.compile(cplMixVAE.model)
+
+    losses = cplMixVAE._fsdp(cplMixVAE.model, 
+                             train_loader=trainloader,
+                             val_loader=testloader,
+                             epochs=n_epoch,
+                             n_epoch_p=n_epoch_p,
+                             c_onehot=data['c_onehot'],
+                             c_p=data['c_p'],
+                             min_con=min_con,
+                             opt=cplMixVAE.optimizer,
+                             device=cplMixVAE.device)
+
+
+    # model_file = cplMixVAE.train(train_loader=trainloader,
+    #                             test_loader=testloader,
+    #                             n_epoch=n_epoch,
+    #                             n_epoch_p=n_epoch_p,
+    #                             c_onehot=data['c_onehot'],
+    #                             c_p=data['c_p'],
+    #                             min_con=min_con,
+    #                             max_prun_it=max_prun_it)
     
 
 # Run the main function
