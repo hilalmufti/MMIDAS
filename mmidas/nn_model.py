@@ -478,10 +478,10 @@ class mixVAE_model(nn.Module):
         return
             Samples from a categorical distribution.
         """
-        print('phi: ', phi.device)
-        print('phi + eps: ', (phi + self.eps).device)
-        print('self device: ', self.device)
-        print('o: ', self.sample_gumbel(phi.size()).device)
+        # print('phi: ', phi.device)
+        # print('phi + eps: ', (phi + self.eps).device)
+        # print('self device: ', self.device)
+        # print('o: ', self.sample_gumbel(phi.size()).device)
         logits = (phi + self.eps).log() + self.sample_gumbel(phi.size())
         return F.softmax(logits / temperature, dim=-1)
 

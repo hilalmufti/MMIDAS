@@ -26,15 +26,9 @@ import torch.multiprocessing as mp
 from torch.nn.parallel import DistributedDataParallel as DDP 
 from torch.utils.data.distributed import DistributedSampler
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
-from torch.distributed.fsdp.fully_sharded_data_parallel import (
-    CPUOffload,
-    BackwardPrefetch,
-)
-from torch.distributed.fsdp.wrap import (
-    size_based_auto_wrap_policy,
-    enable_wrap,
-    wrap,
-)
+
+from torch.profiler import profile, schedule, tensorboard_trace_handler, ProfilerActivity
+
 import builtins as bis
 from typing import List, Type
 
@@ -91,13 +85,13 @@ def _value(s, align=VALUE_ALIGN, width=VALUE_WIDTH, precision=PRECISION):
     return f"{s:{align}{width}.{precision}f}"
 
 def set_seed(seed):
-  print(f"warning: setting seed {seed}")
+#   print(f"warning: setting seed {seed}")
   random.seed(seed)
   np.random.seed(seed)
   torch.manual_seed(seed)
-  torch.cuda.manual_seed_all(seed)
-  torch.backends.cudnn.deterministic = True
-  torch.backends.cudnn.benchmark = False
+#   torch.cuda.manual_seed_all(seed)
+#   torch.backends.cudnn.deterministic = True
+#   torch.backends.cudnn.benchmark = False
 
 class cpl_mixVAE:
     def __init__(self, saving_folder='', aug_file='', device=None, eps=1e-8, save_flag=True, seed=546):
@@ -127,9 +121,10 @@ class cpl_mixVAE:
                 self.device = torch.device('cpu')
                 print('---> Using CPU!')
             else:
-                self.device = dev_t(max_mem(), torch.device)
-                torch.cuda.set_device(self.device)
-                print('device: ' + torch.cuda.get_device_name(torch.cuda.current_device()))
+                self.device = torch.cuda.current_device()
+                # self.device = dev_t(max_mem(), torch.device)
+                # torch.cuda.set_device(self.device)
+                # print('device: ' + torch.cuda.get_device_name(torch.cuda.current_device()))
 
         if self.aug_file:
             self.aug_model = torch.load(self.aug_file)
@@ -1046,18 +1041,6 @@ class cpl_mixVAE:
 
 # ---------------------------- fsdp ---------------------------- #
 
-    # TODO: make static/function
-    def setup(rank, world_size): 
-        os.environ['MASTER_ADDR'] = 'localhost'
-        os.environ['MASTER_PORT'] = '12355'
-
-        # initialize the process group
-        dist.init_process_group("nccl", rank=rank, world_size=world_size)
-
-    # TODO: make static/function
-    def cleanup():
-      dist.destroy_process_group()
-
     def fsdp(self, train_loader, test_loader, n_epoch, n_epoch_p, c_p=0, c_onehot=0, min_con=0.5, max_prun_it=0, rank=None, world_size=None, sampler=None, logging=False):
       ...
 
@@ -1149,111 +1132,128 @@ class cpl_mixVAE:
         # initialized saving arrays
         losses = {
             'total': torch.zeros(epochs).to(rank),
-            'rec': torch.zeros((self.arms, epochs)).to(rank),
-            'joint': torch.zeros(epochs).to(rank),
-            'var': torch.zeros(epochs).to(rank),
-            'c_entp': torch.zeros(epochs).to(rank),
-            'c_ddist': torch.zeros(epochs).to(rank),
-            'c_dist': torch.zeros(epochs).to(rank),
-            's_kl': torch.zeros((self.arms, self.categories, epochs)).to(rank)
+            # 'rec': torch.zeros((self.arms, epochs)).to(rank),
+            # 'joint': torch.zeros(epochs).to(rank),
+            # 'var': torch.zeros(epochs).to(rank),
+            # 'c_entp': torch.zeros(epochs).to(rank),
+            # 'c_ddist': torch.zeros(epochs).to(rank),
+            # 'c_dist': torch.zeros(epochs).to(rank),
+            # 's_kl': torch.zeros((self.arms, self.categories, epochs)).to(rank)
             # 'val_total': torch.zeros(epochs),
             # 'val_rec': torch.zeros(epochs),
         }
+        losses_total = torch.zeros(epochs).to(rank)
 
         B = bsize(train_loader)
 
-        pbar = tqdm(range(epochs))
-        for epoch in pbar:
-            model.train()
-            _losses = {
-                'total': 0.0,
-                'rec': torch.zeros(self.arms),
-                'joint': 0.0,
-                'var': 0.0,
-                'c_entp': 0.0,
-                'c_ddist': 0.0,
-                'c_dist': 0.0,
-                's_kl': 0.0
-            }
-            # _val = {
-            #     'total': 0.0,
-            #     'rec': 0.0
-            # }
-            for i, (data, d), in enumerate(train_loader): # batch index, (data, data index)
-                data, d = to(data, rank), to(d, int)
-                    
-                # TODO: wtf is this
-                trans_data = []
-                for _ in range(self.arms):
-                    if self.aug_file:
-                        noise = torch.randn(B, self.aug_param['num_n'], device=rank)
-                        _, gen_data = self.netA(data, noise, True, rank)
-                        if self.aug_param['n_zim'] > 1:
-                            data_bin = 0.0 * data
-                            data_bin[data > self.eps] = 1.0
-                            fake_data = gen_data[:, :self.aug_param['n_features']] * data_bin
-                            trans_data.append(fake_data)
+        tracing_schedule = schedule(wait=1, warmup=1, active=3, repeat=1)
+        trace_handler = tensorboard_trace_handler(dir_name='./fsdp_runs', use_gzip=True)
+
+ 
+        with profile(
+                activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
+                schedule=tracing_schedule,
+                on_trace_ready=trace_handler,
+                profile_memory = True,
+                record_shapes = True,
+                with_stack = True
+            ) as prof:
+            pbar = tqdm(range(epochs))
+            for epoch in pbar:
+                model.train()
+                _losses = {
+                    'total': torch.zeros(2).to(rank),
+                    # 'rec': torch.zeros(self.arms),
+                    # 'joint': 0.0,
+                    # 'var': 0.0,
+                    # 'c_entp': 0.0,
+                    # 'c_ddist': 0.0,
+                    # 'c_dist': 0.0,
+                    # 's_kl': 0.0
+                }
+                # _val = {
+                #     'total': 0.0,
+                #     'rec': 0.0
+                # }
+                for i, (data, d), in enumerate(train_loader): # batch index, (data, data index)
+                    data, d = to(data, rank), to(d, int)
+                        
+                    # TODO: wtf is this
+                    trans_data = []
+                    for _ in range(self.arms):
+                        if self.aug_file:
+                            noise = torch.randn(B, self.aug_param['num_n'], device=rank)
+                            _, gen_data = self.netA(data, noise, True, rank)
+                            if self.aug_param['n_zim'] > 1:
+                                data_bin = 0.0 * data
+                                data_bin[data > self.eps] = 1.0
+                                fake_data = gen_data[:, :self.aug_param['n_features']] * data_bin
+                                trans_data.append(fake_data)
+                            else:
+                                trans_data.append(gen_data)
                         else:
-                            trans_data.append(gen_data)
+                            trans_data.append(data)
+
+                    if self.ref_prior:
+                        c_bin = to(torch.FloatTensor(c_onehot[d, :]), rank)
+                        prior_c = to(torch.FloatTensor(c_p[d, :]), rank)
                     else:
-                        trans_data.append(data)
+                        c_bin = 0.0
+                        prior_c = 0.0
 
-                if self.ref_prior:
-                    c_bin = to(torch.FloatTensor(c_onehot[d, :]), rank)
-                    prior_c = to(torch.FloatTensor(c_p[d, :]), rank)
-                else:
-                    c_bin = 0.0
-                    prior_c = 0.0
+                    opt.zero_grad()
+                    recon_batch, p_x, r_x, x_low, qc, s, c, mu, log_var, log_qc = model(x=trans_data, temp=self.temp, prior_c=prior_c)
+                    _out = loss_fn(x=trans_data, x_rec=recon_batch, x_succ=p_x, x_disp=r_x, s_mean=mu, s_logvar=log_var, c_pdf=qc, c_samp=c, c_prior=c_bin, A=self.arms, mode=self.mode, is_var=self.is_var, beta=self.beta, eps=self.eps, C=self.categories, lam=self.lam, lam_pc=self.lam_pc, pri=self.ref_prior, device=device)
+                    loss, loss_rec, loss_joint, entropy, dist_c, d_qc, KLD_cont, min_var_0, loglikelihood = _out
+                    loss.backward()
+                    opt.step()
 
-                opt.zero_grad()
-                recon_batch, p_x, r_x, x_low, qc, s, c, mu, log_var, log_qc = model(x=trans_data, temp=self.temp, prior_c=prior_c)
-                _out = loss_fn(x=trans_data, x_rec=recon_batch, x_succ=p_x, x_disp=r_x, s_mean=mu, s_logvar=log_var, c_pdf=qc, c_samp=c, c_prior=c_bin, A=self.arms, mode=self.mode, is_var=self.is_var, beta=self.beta, eps=self.eps, C=self.categories, lam=self.lam, lam_pc=self.lam_pc, pri=self.ref_prior, device=device)
-                loss, loss_rec, loss_joint, entropy, dist_c, d_qc, KLD_cont, min_var_0, loglikelihood = _out
-                loss.backward()
-                opt.step()
+                    _losses['total'][0] += item(loss)
+                    # for a in range(self.arms):
+                    #    _losses['rec'][a] += item(loss_rec[a]) / self.input_dim 
+                    # _losses['joint'] += item(loss_joint)
+                    # _losses['var'] += item(min_var_0)
+                    # _losses['c_entp'] += item(entropy)
+                    # _losses['c_ddist'] += item(d_qc)
+                    # _losses['c_dist'] += item(dist_c)
 
-                _losses['total'] += item(loss)
-                for a in range(self.arms):
-                   _losses['rec'][a] += item(loss_rec[a]) / self.input_dim 
-                _losses['joint'] += item(loss_joint)
-                _losses['var'] += item(min_var_0)
-                _losses['c_entp'] += item(entropy)
-                _losses['c_ddist'] += item(d_qc)
-                _losses['c_dist'] += item(dist_c)
+                    prof.step()
+                _losses['total'][1] = i + 1
+                # validation
+                # _val = self.val(val_loader, device)
+                dist.all_reduce(_losses['total'], op=dist.ReduceOp.SUM)
+
+                losses['total'][epoch] = _losses['total'][0] / _losses['total'][1]
+                # for a in range(self.arms):
+                #     losses['rec'][a][epoch] = _losses['rec'][a] / (i + 1)
+                # losses['joint'][epoch] = _losses['joint'] / (i + 1)
+                # losses['var'][epoch] = _losses['var'] / (i + 1)
+                # losses['c_entp'][epoch] = _losses['c_entp'] / (i + 1)
+                # losses['c_ddist'][epoch] = _losses['c_ddist'] / (i + 1)
+                # losses['c_dist'][epoch] = _losses['c_dist'] / (i + 1)
+                # losses['val_total'][epoch] = _val['total']
+                # losses['val_rec'][epoch] = _val['rec']
                 
-            # validation
-            # _val = self.val(val_loader, device)
-
-            losses['total'][epoch] = _losses['total'] / (i + 1)
-            for a in range(self.arms):
-                losses['rec'][a][epoch] = _losses['rec'][a] / (i + 1)
-            losses['joint'][epoch] = _losses['joint'] / (i + 1)
-            losses['var'][epoch] = _losses['var'] / (i + 1)
-            losses['c_entp'][epoch] = _losses['c_entp'] / (i + 1)
-            losses['c_ddist'][epoch] = _losses['c_ddist'] / (i + 1)
-            losses['c_dist'][epoch] = _losses['c_dist'] / (i + 1)
-            # losses['val_total'][epoch] = _val['total']
-            # losses['val_rec'][epoch] = _val['rec']
-            
-            print(f" -- EPOCH {str(epoch)} -- ".center((EPOCH_WIDTH // 2) + 5, ' '))
-            print(_label('Total Loss:'), _value(losses['total'][epoch]))
-            print(_label('Rec_arm_1:'), _value(losses['rec'][0][epoch]))
-            print(_label('Rec_arm_2:'), _value(losses['rec'][1][epoch]))
-            print(_label('Joint Loss:'), _value(losses['joint'][epoch]))
-            print(_label('Entropy:'), _value(losses['c_entp'][epoch]))
-            print(_label('Distance:'), _value(losses['c_dist'][epoch]))
-            # print(_label('Validation Loss:'), _value(losses['val_total'][epoch]))
-            # print(_label('Validation Rec. Loss:'), _value(losses['val_rec'][epoch]))
-            pbar.set_postfix({'Total Loss': losses['total'][epoch],
-                              'Rec_arm_1': losses['rec'][0][epoch],
-                              'Rec_arm_2': losses['rec'][1][epoch],
-                              'Joint Loss': losses['joint'][epoch],
-                              'Entropy': losses['c_entp'][epoch],
-                              'Distance': losses['c_dist'][epoch],
-                            #   'Validation Loss': losses['val_total'][epoch],
-                            #   'Validation Rec. Loss': losses['val_rec'][epoch]
-                              }
-                              )
+                if rank == 0:
+                    print(f" -- EPOCH {str(epoch)} -- ".center((EPOCH_WIDTH // 2) + 5, ' '))
+                    print(_label('Total Loss:'), _value(losses['total'][epoch]))
+                    # print(_label('Rec_arm_1:'), _value(losses['rec'][0][epoch]))
+                    # print(_label('Rec_arm_2:'), _value(losses['rec'][1][epoch]))
+                    # print(_label('Joint Loss:'), _value(losses['joint'][epoch]))
+                    # print(_label('Entropy:'), _value(losses['c_entp'][epoch]))
+                    # print(_label('Distance:'), _value(losses['c_dist'][epoch]))
+                    # print(_label('Validation Loss:'), _value(losses['val_total'][epoch]))
+                    # print(_label('Validation Rec. Loss:'), _value(losses['val_rec'][epoch]))
+                    pbar.set_postfix({'Total Loss': losses['total'][epoch],
+                                    #   'Rec_arm_1': losses['rec'][0][epoch],
+                                    #   'Rec_arm_2': losses['rec'][1][epoch],
+                                    #   'Joint Loss': losses['joint'][epoch],
+                                    #   'Entropy': losses['c_entp'][epoch],
+                                    #   'Distance': losses['c_dist'][epoch],
+                                    #   'Validation Loss': losses['val_total'][epoch],
+                                    #   'Validation Rec. Loss': losses['val_rec'][epoch]
+                                    }
+                                    )
         # ------------------- Pruning -------------------
 #         masks = {
 #             'bias': torch.ones(self.categories).to(device),

@@ -10,7 +10,7 @@ from sklearn.model_selection import train_test_split
 def load_data(datafile, n_gene=0, gene_id=[], rmv_type=[], min_num=10, eps=1e-1, tau=1.0):
 
     adata = anndata.read_h5ad(datafile)
-    print('data is loaded!')
+    # print('data is loaded!')
 
     data = dict()
     data['log1p'] = adata.X
@@ -57,8 +57,8 @@ def load_data(datafile, n_gene=0, gene_id=[], rmv_type=[], min_num=10, eps=1e-1,
     data['c_p'] = softmax((data['c_onehot'] + eps) / tau, axis=1)
     data['n_type'] = len(np.unique(data['cluster_label']))
 
-    print(' --------- Data Summary --------- ')
-    print(f'num cell types: {len(np.unique(data["cluster_label"]))}, num cells: {data["log1p"].shape[0]}, num genes:{len(data["gene_id"])}')
+    # print(' --------- Data Summary --------- ')
+    # print(f'num cell types: {len(np.unique(data["cluster_label"]))}, num cells: {data["log1p"].shape[0]}, num genes:{len(data["gene_id"])}')
     
     return data
 

@@ -1,27 +1,30 @@
+
+
 import argparse
 import os
-os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
+import sys
+import warnings
+
+_pth = '/allen/programs/celltypes/workgroups/mousecelltypes/Hilal/MMIDAS'
+if _pth not in sys.path:
+    sys.path.append(_pth)
+
+warnings.filterwarnings("ignore")
+
 import mmidas
 from mmidas.nn_model import mixVAE_model, loss_fn
 from mmidas.cpl_mixvae import cpl_mixVAE
 from mmidas.utils.tools import get_paths
 from mmidas.utils.dataloader import load_data, get_loaders
 
-import os
-
-import argparse
 import functools
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-from torchvision import datasets, transforms
+from contextlib import contextmanager
 
 
 import torch.distributed as dist
 import torch.multiprocessing as mp
 from torch.nn.parallel import DistributedDataParallel as DDP
-from torch.utils.data.distributed import DistributedSampler
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 from torch.distributed.fsdp.fully_sharded_data_parallel import (
     CPUOffload,
@@ -35,17 +38,19 @@ from torch.distributed.fsdp.wrap import (
 
 import datetime
 
-def setup(rank, world_size):
-  os.environ['MASTER_ADDR'] = 'localhost'
-  os.environ['MASTER_PORT'] = '12355'
-  dist.init_process_group('nccl', rank=rank, world_size=world_size, timeout=datetime.timedelta(seconds=120))
-
-def cleanup():
-  dist.destroy_process_group()
-
 def memory_stats():
     print(torch.cuda.memory_allocated()/1024**2)
     print(torch.cuda.memory_cached()/1024**2)
+
+@contextmanager
+def dist_init(rank, world_size):
+  os.environ['MASTER_ADDR'] = 'localhost'
+  os.environ['MASTER_PORT'] = '12355'
+  dist.init_process_group('gloo', rank=rank, world_size=world_size, timeout=datetime.timedelta(seconds=120))
+  try:
+    yield
+  finally:
+    dist.destroy_process_group()
 
 def train():
   ...
@@ -57,7 +62,19 @@ def test():
 # [] each arm should probably be in its own fsdp unit
 # [] find best size-based autowrap policy? 
 # [] maybe write an algorithm to find best autowrap policy
-# [] do test, too
+# [] test
+# [] prune
+# [] tensorboard logging probably
+# [] fix all the code when i have time (maybe jax rewrite?)
+# [] fix gloo backend
+# [] add amp
+# [] best autowrap policy
+# [] add code for running compared to baseline
+
+# no fsdp, no allreduce
+# 164,174,880.0000
+# 65,995,880.0000
+# 36,090,360.0000
 def main(rank, world_size, args):
     n_categories = args.n_categories
     n_arm = args.n_arm
@@ -86,95 +103,97 @@ def main(rank, world_size, args):
     pretrained_model = args.pretrained_model
     n_pr = args.n_pr
     beta = args.beta
-      
-    setup(rank, world_size)
-
-    print('finished')
-
-    toml_file = 'pyproject.toml'
-    sub_file = 'smartseq_files'
-    config = get_paths(toml_file=toml_file, sub_file=sub_file)
-    data_path = config['paths']['main_dir'] / config['paths']['data_path']
-    data_file = data_path / config[sub_file]['anndata_file']
-
-    folder_name = f'run_{n_run}_K_{n_categories}_Sdim_{state_dim}_aug_{augmentation}_lr_{lr}_n_arm_{n_arm}_nbatch_{batch_size}' + \
-                f'_train.ipynb_nepoch_{n_epoch}_nepochP_{n_epoch_p}'
-    saving_folder = config['paths']['main_dir'] / config['paths']['saving_path']
-    saving_folder = saving_folder / folder_name
-    os.makedirs(saving_folder, exist_ok=True)
-    os.makedirs(saving_folder / 'model', exist_ok=True)
-    saving_folder = str(saving_folder)
-
-    if augmentation:
-        aug_file = config['paths']['main_dir'] / config[sub_file]['aug_model']
-    else:
-        aug_file = ''
-    
-    if pretrained_model:
-        trained_model = config['paths']['main_dir'] / config[sub_file]['trained_model']
-    else:
-        trained_model = ''
-
-    data = load_data(datafile=data_file)
-    trainloader, testloader, _, = get_loaders(dataset=data['log1p'], batch_size=batch_size)
-
-    cplMixVAE = cpl_mixVAE(saving_folder=saving_folder, device=rank)
-    cplMixVAE.init(categories=n_categories,
-                          state_dim=state_dim,
-                          input_dim=data['log1p'].shape[1],
-                          fc_dim=fc_dim,
-                          lowD_dim=latent_dim,
-                          x_drop=p_drop,
-                          s_drop=s_drop,
-                          lr=lr,
-                          arms=n_arm,
-                          temp=temp,
-                          hard=hard,
-                          tau=tau,
-                          lam=lam,
-                          lam_pc=lam_pc,
-                          beta=beta,
-                          ref_prior=ref_pc,
-                          variational=variational,
-                          trained_model=trained_model,
-                          n_pr=n_pr,
-                          mode=loss_mode)
-
-    # -- fsdp -- 
-
     torch.cuda.set_device(rank)
+      
+    with dist_init(rank, world_size):
+      toml_file = 'pyproject.toml'
+      sub_file = 'smartseq_files'
+      config = get_paths(toml_file=toml_file, sub_file=sub_file)
+      data_path = config['paths']['main_dir'] / config['paths']['data_path']
+      data_file = data_path / config[sub_file]['anndata_file']
 
-    init_start_event = torch.cuda.Event(enable_timing=True) 
-    init_end_event = torch.cuda.Event(enable_timing=True)
+      folder_name = f'run_{n_run}_K_{n_categories}_Sdim_{state_dim}_aug_{augmentation}_lr_{lr}_n_arm_{n_arm}_nbatch_{batch_size}' + \
+                  f'_train.ipynb_nepoch_{n_epoch}_nepochP_{n_epoch_p}'
+      saving_folder = config['paths']['main_dir'] / config['paths']['saving_path']
+      saving_folder = saving_folder / folder_name
+      os.makedirs(saving_folder, exist_ok=True)
+      os.makedirs(saving_folder / 'model', exist_ok=True)
+      saving_folder = str(saving_folder)
 
-    model = cplMixVAE.model.to(rank)
-    # model = model.to(rank)
-    # model = FSPD(model)
+      if augmentation:
+          aug_file = config['paths']['main_dir'] / config[sub_file]['aug_model']
+      else:
+          aug_file = ''
+      
+      if pretrained_model:
+          trained_model = config['paths']['main_dir'] / config[sub_file]['trained_model']
+      else:
+          trained_model = ''
 
-    opt = torch.optim.Adam(model.parameters(), lr=lr)
+      # fix torch seed before dataloader
 
-    init_start_event.record()
-    losses = cplMixVAE._fsdp(model,
-                             train_loader=trainloader,
-                             val_loader=testloader,
-                            # epochs=n_epoch,
-                            epochs=3,
-                             n_epoch_p=n_epoch_p,
-                             c_p=data['c_p'],
-                             c_onehot=data['c_onehot'],
-                             min_con=min_con,
-                             opt=opt,
-                             device = rank,
-                            # device=cplMixVAE.device,
-                             rank=rank,
-                             world_size=world_size)
-    init_end_event.record()
+      data = load_data(datafile=data_file)
+      trainloader, testloader, _, = get_loaders(dataset=data['log1p'], batch_size=batch_size)
 
-    if rank == 0:
-      print(f"Training time: {init_start_event.elapsed_time(init_end_event)}")
-      print(f"{model}")
+      cplMixVAE = cpl_mixVAE(saving_folder=saving_folder, device=rank)
+      cplMixVAE.init(categories=n_categories,
+                            state_dim=state_dim,
+                            input_dim=data['log1p'].shape[1],
+                            fc_dim=fc_dim,
+                            lowD_dim=latent_dim,
+                            x_drop=p_drop,
+                            s_drop=s_drop,
+                            lr=lr,
+                            arms=n_arm,
+                            temp=temp,
+                            hard=hard,
+                            tau=tau,
+                            lam=lam,
+                            lam_pc=lam_pc,
+                            beta=beta,
+                            ref_prior=ref_pc,
+                            variational=variational,
+                            trained_model=trained_model,
+                            n_pr=n_pr,
+                            mode=loss_mode)
 
-    cleanup()
+      # -- fsdp -- 
+
+      init_start_event = torch.cuda.Event(enable_timing=True) 
+      init_end_event = torch.cuda.Event(enable_timing=True)
+
+      my_auto_wrap_policy = functools.partial(
+          size_based_auto_wrap_policy,
+          min_num_params=200,
+      )
+      model = cplMixVAE.model.to(rank)
+      model = FSDP(model, auto_wrap_policy=my_auto_wrap_policy, 
+                   cpu_offload=CPUOffload(offload_params=True))
+      # print(model)
+
+      opt = torch.optim.Adam(model.parameters(), lr=lr)
+
+      init_start_event.record()
+      losses = cplMixVAE._fsdp(model,
+                              train_loader=trainloader,
+                              val_loader=testloader,
+                              # epochs=n_epoch,
+                              epochs=3,
+                              n_epoch_p=n_epoch_p,
+                              c_p=data['c_p'],
+                              c_onehot=data['c_onehot'],
+                              min_con=min_con,
+                              opt=opt,
+                              device = rank,
+                              # device=cplMixVAE.device,
+                              rank=rank,
+                              world_size=world_size,
+                              max_prun_it=max_prun_it)
+      init_end_event.record()
+
+      if rank == 0:
+        print(f"Training time: {init_start_event.elapsed_time(init_end_event)}")
+        print(f"{model}")
 
 
     # model_file = cplMixVAE.train(train_loader=trainloader,
@@ -217,9 +236,6 @@ if __name__ == '__main__':
   parser.add_argument("--device", default='cuda', type=str, help="computing device, either 'cpu' or 'cuda'.")
 
   args = parser.parse_args()
-
-
   WORLD_SIZE = torch.cuda.device_count()
   # main(0, WORLD_SIZE, args)
-
   mp.spawn(main, args=(WORLD_SIZE, args), nprocs=WORLD_SIZE, join=True)
